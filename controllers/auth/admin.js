@@ -3,26 +3,41 @@ const sha512 = require('js-sha512');
 
 const Admin = require('../../models').admin;
 
+/*
+ *=========
+ * Routers
+ *========= 
+ */
+
+/**
+ * success
+ *    0 : Create success
+ *   -1 : ID empty
+ *   -2 : Username empty
+ *   -3 : Email empty
+ *   -4 : Email empty
+ *   -5 : Mismatched passwords
+ *   -6 : Exist user
+ *   -7 : Database error
+ */
 exports.register = async (req, res, next) => {
-  console.log(req.body.data);
+  if (!req.body.data.id) return res.status(412).json({ success: -1 });
+  if (!req.body.data.username) return res.status(412).json({ success: -2 });
+  if (!req.body.data.email) return res.status(412).json({ success: -3 });
+  if (!req.body.data.password || !req.body.data.repassword) return res.status(412).json({ success: -4 });
 
-  if (!req.body.data.id) return res.json({ success: -1 }); // id empty
-  if (!req.body.data.username) return res.json({ success: -2 }); // username empty
-  if (!req.body.data.email) return res.json({ success: -3 }); // email empty
-
-  if (req.body.data.password != req.body.data.repassword) return res.json({ success: -4 }); // password not match
+  if (req.body.data.password != req.body.data.repassword) return res.status(412).json({ success: -5 });
 
   const exist = await Admin.findAll({
     where: {
       [Op.or]: [
         { id: req.body.data.id },
-        { username: req.body.data.username },
         { email: req.body.data.email }
       ]
     }
-  });
+  }).catch(e => res.status(500).send({ success: -7 }));
 
-  if (exist.length != 0) return res.json({ success: -5 }); // exist user
+  if (exist.length != 0) return res.status(412).json({ success: -6 });
 
   return await Admin.create({
     ID: req.body.data.id,
@@ -30,6 +45,45 @@ exports.register = async (req, res, next) => {
     EMAIL: req.body.data.email,
     PASSWORD: sha512(req.body.data.password)
   })
-    .then(r => res.send({ success: 0 })) // success
-    .catch(e => res.send({ success: -6 })); // db error
+    .then(r => res.send({ success: 0 }))
+    .catch(e => res.status(500).send({ success: -7 }));
+}
+
+/**
+ * exist
+ *    true : At least one user exists.
+ *   false : User does not exist.
+ */
+exports.existAdminUser = async (req, res, next) => {
+  const exist = await Admin.findAll({});
+
+  if (exist.length != 0) return res.json({ exist: true });
+  return res.json({ exist: false });
+}
+
+/*
+ *=========
+ * Methods
+ *=========
+ */
+exports.checkId = async (id) => {
+  const exist = await Admin.findOne({ where: { ID: id } });
+  return exist.length == 1 ? true : false;
+}
+
+exports.checkEmail = async (email) => {
+  const exist = await Admin.findOne({ where: { EMAIL: id } });
+  return exist.length == 1 ? true : false;
+}
+
+exports.existUser = async (name, idMode = true) => {
+  console.log(name);
+  if (idMode) return exports.checkId(name);
+  return exports.checkEmail(name);
+};
+
+exports.comparePassword = async (id, password, callback) => {
+
+  // console.log(exist);
+  // callback(null, true);
 }
