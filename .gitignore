@@ -1,5 +1,6 @@
 # Editor config
 .vscode/
+.vs/
 
 # misc
 .DS_Store
