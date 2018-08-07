@@ -68,22 +68,37 @@ exports.existAdminUser = async (req, res, next) => {
  */
 exports.checkId = async (id) => {
   const exist = await Admin.findOne({ where: { ID: id } });
-  return exist.length == 1 ? true : false;
+  return exist ? true : false;
 }
 
 exports.checkEmail = async (email) => {
-  const exist = await Admin.findOne({ where: { EMAIL: id } });
-  return exist.length == 1 ? true : false;
+  const exist = await Admin.findOne({ where: { EMAIL: email } });
+  return exist ? true : false;
 }
 
-exports.existUser = async (name, idMode = true) => {
-  console.log(name);
-  if (idMode) return exports.checkId(name);
+exports.existUser = async (name, idMode = 'ID') => {
+  if (idMode === 'ID') return exports.checkId(name);
   return exports.checkEmail(name);
 };
 
-exports.comparePassword = async (id, password, callback) => {
+exports.getUser = async (mode, id) => {
+  const admin = await Admin.findOne({
+    where: { [mode]: id }
+  });
 
-  // console.log(exist);
-  // callback(null, true);
+  return {
+    type: 'ADMIN',
+    id: admin.ID,
+    username: admin.USERNAME,
+    email: admin.EMAIL
+  }
+}
+
+exports.comparePassword = async (mode, id, password, callback) => {
+  const admin = await Admin.findOne({
+    where: { [mode]: id }
+  });
+
+  if (admin.PASSWORD === sha512(password)) return true;
+  else return false;
 }

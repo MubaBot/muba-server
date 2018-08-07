@@ -1,11 +1,12 @@
 const express = require('express');
 const path = require('path');
-const session = require('express-session'); // 세션 설정
+const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const passport = require('passport'); // 여기와
+const passport = require('passport');
+const randomstring = require("randomstring");
 
 const indexRouter = require('./routes/index');
 
@@ -18,7 +19,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(session({ secret: 'ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f88', resave: true, saveUninitialized: false }));
+app.use(session({ secret: randomstring.generate(), resave: true, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 

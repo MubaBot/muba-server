@@ -1,15 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const passport = require('passport');
 
-const checkLogin = passport.authenticate('local');
+const Admin = require('../../controllers/auth/admin');
 
-const admin = require('../../controllers/auth/admin');
+router.post('/', Admin.register);
 
-router.post('/', admin.register);
-
-router.get('/login', checkLogin);
-
-router.get('/check', admin.existAdminUser);
+router.get('/check', Admin.existAdminUser);
 
 module.exports = router;

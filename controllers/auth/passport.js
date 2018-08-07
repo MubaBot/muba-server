@@ -1,47 +1,63 @@
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+
 const Admin = require('./admin');
+const jwt = require('./jwt');
 
 module.exports = () => {
-  passport.serializeUser((user, done) => { // Strategy 성공 시 호출됨
-    done(null, user); // 여기의 user가 deserializeUser의 첫 번째 매개변수로 이동
+  passport.serializeUser((user, done) => {
+    done(null, user);
   });
 
-  passport.deserializeUser((user, done) => { // 매개변수 user는 serializeUser의 done의 인자 user를 받은 것
-    done(null, user); // 여기의 user가 req.user가 됨
+  passport.deserializeUser((user, done) => {
+    done(null, user);
   });
 
-  passport.use(new LocalStrategy({ // local 전략을 세움
+  passport.use(new LocalStrategy({
     usernameField: 'ID',
     passwordField: 'PW',
     session: true,
     passReqToCallback: false,
   }, (ID, password, done) => {
-    if (!/^(.)\|/.match(ID)) {
+    if (!/^(.)\|(.)\|/.test(ID)) {
       return done(null, false, { message: '잘못된 접근입니다.' });
     }
 
-    const type = ID.split('|')[0];
-    const id = ID.split('|')[1];
+    const from = ID.split('|')[0];
+    const type = ID.split('|')[1];
+    const id = ID.split('|')[2];
 
-    if (!/^(O|U|A)$/.match(type)) {
+    if (!/^(O|U|A)$/.test(from)) {
       return done(null, false, { message: '잘못된 접근입니다.' });
     }
 
-    var idMode = true;
-    if (/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.match(id)) {
-      idMode = false;
-    }
+    var idMode = 'ID';
+    if (/^([\w0-9])*\@([\w0-9\.])*$/.test(id)) idMode = 'EMAIL';
 
-    switch (type) {
+    if (type !== 'L') return done(null, false); // Local test (without SNS)
+
+    var existUser = function () { };
+    var getUser = function () { };
+    var comparePassword = function () { };
+
+    switch (from) {
       case 'A': // Admin
-        return Admin.existUser(id, idMode).then(user => {
-          console.log(user);
-          return Admin.comparePassword(id, password, (passError, isMatch) => {
-            if (isMatch) return done(null, user);
-            return done(null, false, { message: '비밀번호가 틀렸습니다' });
-          });
-        });
+        existUser = Admin.existUser;
+        getUser = Admin.getUser;
+        comparePassword = Admin.comparePassword;
+        break;
+      default:
+        return done(null, false, { message: '잘못된 접근입니다.' });
     };
+
+    return existUser(id, idMode).then(exist => {
+      if (!exist) return done(null, false, { message: '존재하지 않는 계정입니다.' });
+      return getUser(idMode, id).then(user => {
+        return comparePassword(idMode, id, password).then(isMatch => {
+          if (isMatch) return done(null, jwt.sign(user));
+          return done(null, false, { message: '비밀번호가 틀렸습니다' });
+        });
+      });
+    });
   }));
 };
