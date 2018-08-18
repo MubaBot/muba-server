@@ -1,7 +1,7 @@
 const Op = require('sequelize').Op;
 const sha512 = require('js-sha512');
 
-const Admin = require('../../models').admin;
+const Admin = require('@models').admin;
 
 /*
  *=========

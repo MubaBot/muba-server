@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const Admin = require('../../controllers/auth/admin');
+const Admin = require("@controllers/auth/admin");
 
 router.post('/', Admin.register);
 

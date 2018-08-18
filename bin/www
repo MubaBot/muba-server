@@ -3,11 +3,13 @@
 /**
  * Module dependencies.
  */
+require("dotenv").config();
+require("module-alias")();
 
 var app = require('../app');
 var debug = require('debug')('muba-server:server');
 var http = require('http');
-var models = require('../models');
+var models = require('@models');
 
 /**
  * Get port from environment and store in Express.
