@@ -15,7 +15,7 @@ const Admin = require('@models').admin;
  *   -1 : ID empty
  *   -2 : Username empty
  *   -3 : Email empty
- *   -4 : Email empty
+ *   -4 : Password empty
  *   -5 : Mismatched passwords
  *   -6 : Exist user
  *   -7 : Database error

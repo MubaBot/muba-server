@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
+const Auth = require("@controllers/auth");
 const Admin = require("@controllers/auth/admin");
 
+// TODO: register #3
 router.post('/', Admin.register);
 
-router.get('/check', Admin.existAdminUser);
+router.get('/exist', Admin.existAdminUser);
+
+router.get("/me", Auth.requireAdmin, Auth.sendInformation);
+
 
 module.exports = router;

@@ -21,14 +21,14 @@ exports.sendInformation = (req, res) => {
  * Methods
  */
 const getDecodeData = req => {
-  const token = req.headers["x-access-token"];
+  req.token = req.headers["x-access-token"];
 
-  if (!token) {
+  if (!req.token) {
     req.isLogin = false;
     return null;
   }
 
-  return jwt.verify(token);
+  return jwt.verify(req.token);
 };
 
 exports.requireLogin = (req, res) => {
@@ -40,9 +40,6 @@ exports.requireLogin = (req, res) => {
 };
 
 exports.doLogin = (req, res, next) => {
-  req.body.ID = req.body.data.ID;
-  req.body.PW = req.body.data.PW;
-
   return passport.authenticate("local")(req, res, next);
 };
 
@@ -51,6 +48,17 @@ exports.isLogin = async (req, res, next) => {
 
   if (decode) req.isLogin = true;
   else req.isLogin = false;
+
+  return next();
+};
+
+exports.requireAdmin = async (req, res, next) => {
+  const decode = getDecodeData(req);
+
+  if (decode && decode.type === "ADMIN") {
+    req.info = decode;
+    req.isAdmin = true;
+  } else return res.status(401).send("Unauthorized");
 
   return next();
 };
