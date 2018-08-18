@@ -1,10 +1,25 @@
 const rp = require("request-promise");
 const URL = process.env.CRWALER_URL;
 
+/**
+ * success
+ *    0 : Create success
+ *   -1 : page empty
+ *   -2 : page is not numeric
+ */
 exports.getList = async (req, res) => {
+  const page = req.params.page;
+
+  if (!page) return res.status(412).json({ success: -1 });
+  if (!/^[\d]*$/.test(page)) return res.status(412).json({ success: -2 });
+
   return rp
     .get({
-      uri: URL + "/keyword"
+      uri: URL + "/keyword/list/" + page,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "x-access-token": req.token
+      }
     })
     .then(result => res.send(result))
     .catch(err => res.status(500).send("Error"));
