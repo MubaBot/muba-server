@@ -23,14 +23,14 @@ app.use(session({ secret: randomstring.generate(), resave: true, saveUninitializ
 app.use(passport.initialize());
 app.use(passport.session());
 
-require("dotenv").config();
 require("./controllers/auth/passport")();
 
 // CORS
 const whitelist = [process.env.ADMIN_URL, process.env.CRWALER_URL];
 const corsOptions = {
   origin: function(origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) callback(null, true);
+    if (origin === undefined) callback(null, true);
+    else if (whitelist.indexOf(origin) !== -1) callback(null, true);
     else callback(new Error("Not allowed by CORS"));
   }
 };
