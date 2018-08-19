@@ -1,5 +1,4 @@
-const rp = require("request-promise");
-const URL = process.env.CRWALER_URL;
+const request = require("@controllers/request");
 
 /**
  * success
@@ -13,16 +12,13 @@ exports.getList = async (req, res) => {
   if (!page) return res.status(412).json({ success: -1 });
   if (!/^[\d]*$/.test(page)) return res.status(412).json({ success: -2 });
 
-  return rp
-    .get({
-      uri: URL + "/keyword/list/" + page,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "x-access-token": req.token
-      }
-    })
-    .then(result => res.send(result))
-    .catch(err => res.status(500).send("Error"));
+  return request({
+    method: "GET",
+    url: "/keyword/list/" + page,
+    token: req.token,
+    then: result => res.json(result),
+    error: err => res.status(500).send("Error")
+  });
 };
 
 /**
@@ -36,20 +32,13 @@ exports.createKeyword = async (req, res) => {
 
   if (!keyword || keyword == "") return res.status(412).json({ success: -1 });
 
-  return rp({
+  return request({
     method: "POST",
-    uri: URL + "/keyword",
-    body: {
-      keyword: keyword
-    },
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "x-access-token": req.token
-    },
-    json: true
-  })
-    .then(result => res.json({ success: 0 }))
-    .catch(err => {
+    url: "/keyword",
+    token: req.token,
+    body: { keyword: keyword },
+    then: result => res.json({ success: 0 }),
+    error: err => {
       switch (err.response.body.success) {
         case -1:
           return res.status(412).json({ success: -1 });
@@ -58,5 +47,7 @@ exports.createKeyword = async (req, res) => {
         default:
           return res.status(500).json({ success: 1 });
       }
-    });
+    }
+  });
+};
 };

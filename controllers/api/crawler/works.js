@@ -1,5 +1,4 @@
-const rp = require("request-promise");
-const URL = process.env.CRWALER_URL;
+const request = require("@controllers/request");
 
 /**
  * success
@@ -10,27 +9,19 @@ const URL = process.env.CRWALER_URL;
  */
 exports.reSearchKeyword = async (req, res) => {
   const keyword = req.body.keyword;
-  console.log(keyword);
-
   if (!keyword || keyword == "") return res.status(412).json({ success: -1 });
 
-  return rp({
+  return request({
     method: "PUT",
-    uri: URL + "/works",
-    body: {
-      keyword: keyword
-    },
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "x-access-token": req.token
-    },
-    json: true
-  })
-    .then(result => res.json({ success: 0 }))
-    .catch(err => {
+    url: "/works",
+    token: req.token,
+    body: { keyword: keyword },
+    then: result => res.json({ success: 0 }),
+    error: err => {
       switch (err.response.body.success) {
         default:
           return res.status(500).json({ success: 1 });
       }
-    });
+    }
+  });
 };
