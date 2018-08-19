@@ -47,12 +47,15 @@ exports.createKeyword = async (req, res) => {
     },
     json: true
   })
-    .then(result => {
-      console.log(result);
-      res.json({ success: 0 });
-    })
+    .then(result => res.json({ success: 0 }))
     .catch(err => {
-      // console.log(err);
-      res.status(500).send("Error");
+      switch (err.response.body.success) {
+        case -1:
+          return res.status(412).json({ success: -1 });
+        case -2:
+          return res.status(409).json({ success: -2 });
+        default:
+          return res.status(500).json({ success: 1 });
+      }
     });
 };

@@ -1,7 +1,7 @@
-const Op = require('sequelize').Op;
-const sha512 = require('js-sha512');
+const Op = require("sequelize").Op;
+const sha512 = require("js-sha512");
 
-const Admin = require('@models').admin;
+const Admin = require("@models").admin;
 
 /*
  *=========
@@ -30,14 +30,11 @@ exports.register = async (req, res, next) => {
 
   const exist = await Admin.findAll({
     where: {
-      [Op.or]: [
-        { id: req.body.data.id },
-        { email: req.body.data.email }
-      ]
+      [Op.or]: [{ id: req.body.data.id }, { email: req.body.data.email }]
     }
   }).catch(e => res.status(500).send({ success: -7 }));
 
-  if (exist.length != 0) return res.status(412).json({ success: -6 });
+  if (exist.length != 0) return res.status(409).json({ success: -6 });
 
   return await Admin.create({
     ID: req.body.data.id,
@@ -47,7 +44,7 @@ exports.register = async (req, res, next) => {
   })
     .then(r => res.send({ success: 0 }))
     .catch(e => res.status(500).send({ success: -7 }));
-}
+};
 
 /**
  * exist
@@ -59,25 +56,25 @@ exports.existAdminUser = async (req, res, next) => {
 
   if (exist.length != 0) return res.json({ exist: true });
   return res.json({ exist: false });
-}
+};
 
 /*
  *=========
  * Methods
  *=========
  */
-exports.checkId = async (id) => {
+exports.checkId = async id => {
   const exist = await Admin.findOne({ where: { ID: id } });
   return exist ? true : false;
-}
+};
 
-exports.checkEmail = async (email) => {
+exports.checkEmail = async email => {
   const exist = await Admin.findOne({ where: { EMAIL: email } });
   return exist ? true : false;
-}
+};
 
-exports.existUser = async (name, idMode = 'ID') => {
-  if (idMode === 'ID') return exports.checkId(name);
+exports.existUser = async (name, idMode = "ID") => {
+  if (idMode === "ID") return exports.checkId(name);
   return exports.checkEmail(name);
 };
 
@@ -87,12 +84,12 @@ exports.getUser = async (mode, id) => {
   });
 
   return {
-    type: 'ADMIN',
+    type: "ADMIN",
     id: admin.ID,
     username: admin.USERNAME,
     email: admin.EMAIL
-  }
-}
+  };
+};
 
 exports.comparePassword = async (mode, id, password, callback) => {
   const admin = await Admin.findOne({
@@ -101,4 +98,4 @@ exports.comparePassword = async (mode, id, password, callback) => {
 
   if (admin.PASSWORD === sha512(password)) return true;
   else return false;
-}
+};
