@@ -30,6 +30,7 @@
   "_moduleAliases": {
     "@root": ".",
     "@controllers": "controllers",
+    "@api": "controllers/api",
     "@models": "models",
     "@config": "config"
   }

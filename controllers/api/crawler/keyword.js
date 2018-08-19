@@ -29,6 +29,7 @@ exports.getList = async (req, res) => {
  * success
  *    0 : Create success
  *   -1 : Keyword empty
+ *   -2 : Exist keyword
  */
 exports.createKeyword = async (req, res) => {
   const keyword = req.body.keyword;
