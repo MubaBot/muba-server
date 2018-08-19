@@ -50,4 +50,23 @@ exports.createKeyword = async (req, res) => {
     }
   });
 };
+
+exports.deleteKeyword = async (req, res, nex) => {
+  const keyword = req.body.keyword;
+
+  if (!keyword || keyword == "") return res.status(412).json({ success: -1 });
+
+  return request({
+    method: "DELETE",
+    url: "/keyword",
+    token: req.token,
+    body: { keyword: keyword },
+    then: result => res.json({ success: 0 }),
+    error: err => {
+      switch (err.response.body.success) {
+        default:
+          return res.status(500).json({ success: 1 });
+      }
+    }
+  });
 };

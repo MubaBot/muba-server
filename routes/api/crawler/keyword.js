@@ -8,5 +8,6 @@ const Auth = require("@controllers/auth");
 router.get("/list/:page?", Auth.requireAdmin, Keyword.getList);
 router.post("/", Auth.requireAdmin, Keyword.createKeyword);
 router.put("/", Auth.requireAdmin, Works.reSearchKeyword);
+router.delete("/", Auth.requireAdmin, Keyword.deleteKeyword);
 
 module.exports = router;
