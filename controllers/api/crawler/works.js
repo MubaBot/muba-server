@@ -3,6 +3,27 @@ const request = require("@controllers/request");
 /**
  * success
  *    0 : Create success
+ *   -1 : page empty
+ *   -2 : page is not numeric
+ */
+exports.getList = async (req, res, next) => {
+  const page = req.params.page;
+
+  if (!page) return res.status(412).json({ success: -1 });
+  if (!/^[\d]*$/.test(page)) return res.status(412).json({ success: -2 });
+
+  return request({
+    method: "GET",
+    url: "/works/list/" + page,
+    token: req.token,
+    then: result => res.json(result),
+    error: err => res.status(500).json({ success: -1 })
+  });
+};
+
+/**
+ * success
+ *    0 : Create success
  *    1 : Server Error
  *   -1 : Keyword empty
  *   -2 : Exist keyword
