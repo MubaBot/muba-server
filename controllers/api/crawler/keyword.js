@@ -17,7 +17,22 @@ exports.getList = async (req, res) => {
     url: "/keyword/list/" + page,
     token: req.token,
     then: result => res.json(result),
-    error: err => res.status(500).send("Error")
+    error: err => res.status(500).json({ success: -1 })
+  });
+};
+
+exports.getWorkerByKeyword = async (req, res) => {
+  const keyword = req.params.keyword;
+
+  if (!keyword || keyword == "") return res.status(412).json({ success: -1 });
+
+  return request({
+    method: "GET",
+    url: "/keyword/worker",
+    body: { keyword: keyword },
+    token: req.token,
+    then: result => res.json(result),
+    error: err => res.status(500).json({ success: 1 })
   });
 };
 
