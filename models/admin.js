@@ -8,7 +8,9 @@ module.exports = function (sequelize, DataTypes) {
     BLOCK: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, {
     timestamps: false,
-    tableName: 'admin'
+    tableName: 'admin',
+    charset: "utf8",
+    collate: "utf8_unicode_ci"
   });
 
   return admin;
