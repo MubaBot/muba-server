@@ -21,26 +21,26 @@ const Admin = require("@models").admin;
  *   -7 : Database error
  */
 exports.register = async (req, res, next) => {
-  if (!req.body.data.id) return res.status(412).json({ success: -1 });
-  if (!req.body.data.username) return res.status(412).json({ success: -2 });
-  if (!req.body.data.email) return res.status(412).json({ success: -3 });
-  if (!req.body.data.password || !req.body.data.repassword) return res.status(412).json({ success: -4 });
+  if (!req.body.id) return res.status(412).json({ success: -1 });
+  if (!req.body.username) return res.status(412).json({ success: -2 });
+  if (!req.body.email) return res.status(412).json({ success: -3 });
+  if (!req.body.password || !req.body.repassword) return res.status(412).json({ success: -4 });
 
-  if (req.body.data.password != req.body.data.repassword) return res.status(412).json({ success: -5 });
+  if (req.body.password != req.body.repassword) return res.status(412).json({ success: -5 });
 
   const exist = await Admin.findAll({
     where: {
-      [Op.or]: [{ id: req.body.data.id }, { email: req.body.data.email }]
+      [Op.or]: [{ id: req.body.id }, { email: req.body.email }]
     }
   }).catch(e => res.status(500).send({ success: -7 }));
 
   if (exist.length != 0) return res.status(409).json({ success: -6 });
 
   return await Admin.create({
-    ID: req.body.data.id,
-    USERNAME: req.body.data.username,
-    EMAIL: req.body.data.email,
-    PASSWORD: sha512(req.body.data.password)
+    ID: req.body.id,
+    USERNAME: req.body.username,
+    EMAIL: req.body.email,
+    PASSWORD: sha512(req.body.password)
   })
     .then(r => res.send({ success: 0 }))
     .catch(e => res.status(500).send({ success: -7 }));
