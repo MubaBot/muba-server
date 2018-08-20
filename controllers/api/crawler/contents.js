@@ -21,6 +21,20 @@ exports.getList = async (req, res) => {
   });
 };
 
+exports.getContentById = async (req, res) => {
+  const id = req.params.id;
+
+  if (!id || id == "") return res.status(412).json({ success: -1 });
+
+  return request({
+    method: "GET",
+    url: "/contents/" + id,
+    token: req.token,
+    then: result => res.json(result),
+    error: err => res.status(500).json({ success: 1 })
+  });
+};
+
 exports.deleteContent = async (req, res) => {
   const id = req.body.id;
   if (!id || id == "") return res.status(412).json({ success: -1 });
