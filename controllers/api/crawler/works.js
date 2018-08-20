@@ -14,7 +14,7 @@ exports.getList = async (req, res, next) => {
 
   return request({
     method: "GET",
-    url: "/works/list/" + page,
+    url: "/queue/list/" + page,
     token: req.token,
     then: result => res.json(result),
     error: err => res.status(500).json({ success: -1 })
@@ -37,6 +37,24 @@ exports.reSearchKeyword = async (req, res) => {
     url: "/works",
     token: req.token,
     body: { keyword: keyword },
+    then: result => res.json({ success: 0 }),
+    error: err => {
+      switch (err.response.body.success) {
+        default:
+          return res.status(500).json({ success: 1 });
+      }
+    }
+  });
+};
+
+exports.deleteWorkingById = async (req, res, next) => {
+  const id = req.params.id;
+  if (!id || id == "") return res.status(412).json({ success: -1 });
+
+  return request({
+    method: "DELETE",
+    url: "/queue/" + id,
+    token: req.token,
     then: result => res.json({ success: 0 }),
     error: err => {
       switch (err.response.body.success) {
