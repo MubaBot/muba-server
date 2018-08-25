@@ -64,19 +64,3 @@ exports.deleteWorkingById = async (req, res, next) => {
     }
   });
 };
-
-exports.deleteWorkingAll = async (req, res, next) => {
-  console.log("all remove");
-  return request({
-    method: "DELETE",
-    url: "/queue/all",
-    token: req.token,
-    then: result => res.json({ success: 0 }),
-    error: err => {
-      switch (err.response.body.success) {
-        default:
-          return res.status(500).json({ success: 1 });
-      }
-    }
-  });
-};
