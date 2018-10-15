@@ -55,7 +55,8 @@ exports.getOrderListForOwner = async (req, res, next) => {
     ],
     attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID"],
     offset: (page - 1) * ShowCount,
-    limit: ShowCount
+    limit: ShowCount,
+    order: [["createdAt", "DESC"]]
   });
 
   const count = await Order.count({
@@ -114,7 +115,8 @@ exports.getOrderListForOwnerByAdmission = async (req, res, next) => {
     where: { ADMISSION: true },
     attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID"],
     offset: (page - 1) * ShowCount,
-    limit: ShowCount
+    limit: ShowCount,
+    order: [["createdAt", "DESC"]]
   });
 
   const count = await Order.count({
@@ -170,7 +172,8 @@ exports.getOrderListForUser = async (req, res, next) => {
     where: { USERID: id },
     attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
     offset: (page - 1) * ShowCount,
-    limit: ShowCount
+    limit: ShowCount,
+    order: [["createdAt", "DESC"]]
   });
 
   console.log(JSON.stringify(requests[0]));
