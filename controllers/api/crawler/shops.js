@@ -21,6 +21,28 @@ exports.getList = async (req, res) => {
   });
 };
 
+exports.moveShops = async (req, res, next) => {
+  const count = req.body.pageCount;
+  const page = req.body.page;
+
+  if (!count) return res.status(412).json({ success: -1 });
+  if (!/^[\d]*$/.test(count)) return res.status(412).json({ success: -2 });
+
+  return request({
+    method: "PUT",
+    url: "/shops/move",
+    token: req.token,
+    body: { count: count, page: page },
+    then: result => res.json({ success: 0 }),
+    error: err => {
+      switch (err.response.body.success) {
+        default:
+          return res.status(500).json({ success: 1 });
+      }
+    }
+  });
+};
+
 exports.deleteShopById = async (req, res, next) => {
   const id = req.params.id;
   if (!id || id == "") return res.status(412).json({ success: -1 });

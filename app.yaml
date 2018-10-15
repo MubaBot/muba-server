@@ -1,6 +1,7 @@
 apps:
   - script: ./bin/www
-    name: 'API Server'
+    name: "API Server"
     instances: 0
-    watch: true
+    watch: ["bin", "config", "controllers", "models", "routes", "app.js", "package.json"]
+    ignore_watch": ["node_modules", "uploads"]
     exec_mode: cluster

@@ -2,6 +2,8 @@
 .vscode/
 .vs/
 
+uploads/*
+
 # misc
 .DS_Store
 package-lock.json

@@ -26,7 +26,7 @@ app.use(passport.session());
 require("./controllers/auth/passport")();
 
 // CORS
-const whitelist = [process.env.ADMIN_URL, process.env.CRWALER_URL];
+const whitelist = [process.env.ADMIN_URL, process.env.CRWALER_URL, process.env.OWNER_URL];
 const corsOptions = {
   origin: function(origin, callback) {
     if (origin === undefined) callback(null, true);

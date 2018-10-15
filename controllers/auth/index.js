@@ -1,5 +1,7 @@
 const passport = require("passport");
 
+const Shop = require("@models").shop;
+
 const jwt = require("./jwt");
 
 /**
@@ -31,7 +33,7 @@ const getDecodeData = req => {
   return jwt.verify(req.token);
 };
 
-exports.requireLogin = (req, res) => {
+exports.requireLogin = (req, res, next) => {
   const decode = getDecodeData(req);
   if (decode) req.info = decode;
   else return res.status(401).send("Unauthorized");
@@ -52,6 +54,33 @@ exports.isLogin = async (req, res, next) => {
   return next();
 };
 
+exports.getLoginInfo = (req, res, next) => {
+  const decode = getDecodeData(req);
+  if (decode) req.info = decode;
+
+  return next();
+};
+
+exports.requireUser = async (req, res, next) => {
+  const decode = getDecodeData(req);
+
+  if (decode && decode.type === "USER") {
+    req.info = decode;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
+exports.requireOwner = async (req, res, next) => {
+  const decode = getDecodeData(req);
+
+  if (decode && decode.type === "OWNER") {
+    req.info = decode;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
 exports.requireAdmin = async (req, res, next) => {
   const decode = getDecodeData(req);
 
@@ -59,6 +88,16 @@ exports.requireAdmin = async (req, res, next) => {
     req.info = decode;
     req.isAdmin = true;
   } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
+exports.shopAuthCheck = async (req, res, next) => {
+  const id = req.params.id || req.body.id;
+  const user = req.info._id;
+
+  const exist = await Shop.findOne({ where: { _id: id, OWNERID: user } });
+  if (!exist) return res.status(403).send("Permission denied");
 
   return next();
 };
