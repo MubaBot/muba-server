@@ -53,7 +53,7 @@ exports.getOrderListForOwner = async (req, res, next) => {
         ]
       }
     ],
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID"],
+    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
     offset: (page - 1) * ShowCount,
     limit: ShowCount,
     order: [["createdAt", "DESC"]]
@@ -113,7 +113,7 @@ exports.getOrderListForOwnerByAdmission = async (req, res, next) => {
       }
     ],
     where: { ADMISSION: true },
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID"],
+    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
     offset: (page - 1) * ShowCount,
     limit: ShowCount,
     order: [["createdAt", "DESC"]]
