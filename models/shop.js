@@ -127,6 +127,16 @@ module.exports = function(sequelize, DataTypes) {
       sourceKey: "_id"
     });
 
+    shop.hasMany(models.order_push, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "SHOPID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
+
     shop.belongsTo(models.owner, {
       foreignKey: {
         name: "OWNERID",

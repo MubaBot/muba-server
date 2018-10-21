@@ -4,19 +4,19 @@ const router = express.Router();
 const Config = require("@api/crawler/config");
 const Auth = require("@controllers/auth");
 
-router.get("/search", Auth.requireAdmin, Config.getSearchConfigList);
+router.get("/search", Auth.Admin.requireAdmin, Config.getSearchConfigList);
 
-router.post("/search", Auth.requireAdmin, Config.insertSearchConfig);
-router.post("/search/:id", Auth.requireAdmin, Config.appendSearchMode);
+router.post("/search", Auth.Admin.requireAdmin, Config.insertSearchConfig);
+router.post("/search/:id", Auth.Admin.requireAdmin, Config.appendSearchMode);
 
-router.delete("/search/:id", Auth.requireAdmin, Config.removeSearchConfig);
-router.delete("/search/:id/:mode", Auth.requireAdmin, Config.removeMode);
+router.delete("/search/:id", Auth.Admin.requireAdmin, Config.removeSearchConfig);
+router.delete("/search/:id/:mode", Auth.Admin.requireAdmin, Config.removeMode);
 
-router.get("/content", Auth.requireAdmin, Config.getContentConfigList);
+router.get("/content", Auth.Admin.requireAdmin, Config.getContentConfigList);
 
-router.post("/content", Auth.requireAdmin, Config.insertContentConfig);
-router.put("/content/:domain", Auth.requireAdmin, Config.updateContentConfig);
+router.post("/content", Auth.Admin.requireAdmin, Config.insertContentConfig);
+router.put("/content/:domain", Auth.Admin.requireAdmin, Config.updateContentConfig);
 
-router.delete("/content/:id", Auth.requireAdmin, Config.removeContentConfig);
+router.delete("/content/:id", Auth.Admin.requireAdmin, Config.removeContentConfig);
 
 module.exports = router;

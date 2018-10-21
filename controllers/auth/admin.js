@@ -1,7 +1,11 @@
 const Op = require("sequelize").Op;
 const sha512 = require("js-sha512");
 
+const jwt = require("./jwt");
+
 const Admin = require("@models").admin;
+
+const ShowCount = 10;
 
 /*
  *=========
@@ -58,18 +62,60 @@ exports.existAdminUser = async (req, res, next) => {
   return res.json({ exist: false });
 };
 
+exports.getAdminList = async (req, res, next) => {
+  const page = req.params.page;
+  const id = req.info._id;
+
+  const admin = await Admin.findAll({
+    where: { _id: { [Op.not]: id } },
+    offset: (page - 1) * ShowCount,
+    limit: ShowCount
+  });
+
+  const count = await Admin.count({});
+
+  return res.json({ success: 0, count: count - 1, displayCount: ShowCount, lists: admin });
+};
+
+exports.requireAdmin = async (req, res, next) => {
+  const decode = jwt.getDecodeData(req);
+
+  if (decode && decode.type === "ADMIN") {
+    req.info = decode;
+    req.isAdmin = true;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
+exports.allowAdmin = async (req, res, next) => {
+  const id = req.params.id;
+
+  return Admin.update({ BLOCK: false }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.blockAdmin = async (req, res, next) => {
+  const id = req.params.id;
+
+  return Admin.update({ BLOCK: true }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
 /*
  *=========
  * Methods
  *=========
  */
 exports.checkId = async id => {
-  const exist = await Admin.findOne({ where: { ID: id } });
+  const exist = await Admin.findOne({ where: { ID: id, BLOCK: false } });
   return exist ? true : false;
 };
 
 exports.checkEmail = async email => {
-  const exist = await Admin.findOne({ where: { EMAIL: email } });
+  const exist = await Admin.findOne({ where: { EMAIL: email, BLOCK: false } });
   return exist ? true : false;
 };
 

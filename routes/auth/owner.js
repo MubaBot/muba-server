@@ -9,6 +9,6 @@ router.post("/", Owner.register);
 
 // router.get("/exist", Admin.existAdminUser);
 
-// router.get("/me", Auth.requireAdmin, Auth.sendInformation);
+// router.get("/me", Auth.Admin.requireAdmin, Auth.sendInformation);
 
 module.exports = router;

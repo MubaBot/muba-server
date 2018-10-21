@@ -1,6 +1,7 @@
 const models = require("@models");
 
 const Order = require("@models").order;
+const OrderPush = require("@models").order_push;
 const OrderMenu = require("@models").order_menu;
 const OrderMenuOption = require("@models").order_menu_option;
 
@@ -12,120 +13,66 @@ const ShopMenuOptions = require("@models").shop_menu_options;
 
 const ShowCount = 10;
 
-exports.getOrderListForOwner = async (req, res, next) => {
-  const page = req.params.page;
-  const id = req.info._id;
+const getOrderItems = async (owner = -1, page, { where }) => {
+  let include = [
+    { model: User, attributes: ["USERNAME"] },
+    {
+      model: OrderMenu,
+      attributes: ["_id", "COUNT", "PRICE", "MENUID"],
+      include: [
+        {
+          model: OrderMenuOption,
+          attributes: ["_id"],
+          include: [
+            {
+              model: ShopMenuOptions,
+              attributes: ["_id"],
+              include: [{ model: ShopOptions, attributes: ["OPTIONNAME", "PRICE"] }]
+            }
+          ]
+        },
+        { model: ShopMenu, attributes: ["MENUNAME"] }
+      ]
+    }
+  ];
 
-  const requests = await Order.findAll({
-    include: [
-      {
-        model: User,
-        attributes: ["USERNAME"]
-      },
-      {
-        model: Shop,
-        where: { OWNERID: id }
-      },
-      {
-        model: OrderMenu,
-        attributes: ["_id", "COUNT", "PRICE", "MENUID"],
-        include: [
-          {
-            model: OrderMenuOption,
-            attributes: ["_id"],
-            include: [
-              {
-                model: ShopMenuOptions,
-                attributes: ["_id"],
-                include: [
-                  {
-                    model: ShopOptions,
-                    attributes: ["OPTIONNAME", "PRICE"]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            model: ShopMenu,
-            attributes: ["MENUNAME"]
-          }
-        ]
-      }
-    ],
+  if (owner !== -1) include.push({ model: Shop, where: { OWNERID: owner } });
+
+  const options = {
+    include: include,
     attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
+    where: where,
     offset: (page - 1) * ShowCount,
     limit: ShowCount,
     order: [["createdAt", "DESC"]]
-  });
+  };
+
+  return Order.findAll(options);
+};
+
+exports.getOrderListForOwner = async (req, res, next) => {
+  const shop = req.params.id;
+  const page = req.params.page;
+  const id = req.info._id;
+
+  const requests = await getOrderItems(id, page, { where: { SHOPID: shop } });
 
   const count = await Order.count({
-    include: [
-      {
-        model: Shop,
-        where: { OWNERID: id }
-      }
-    ]
+    include: [{ model: Shop, where: { OWNERID: id } }]
   });
 
   return res.json({ success: 0, count: count, displayCount: ShowCount, lists: requests });
 };
 
 exports.getOrderListForOwnerByAdmission = async (req, res, next) => {
+  const shop = req.params.id;
   const page = req.params.page;
   const id = req.info._id;
 
-  const requests = await Order.findAll({
-    include: [
-      {
-        model: User,
-        attributes: ["USERNAME"]
-      },
-      {
-        model: Shop,
-        where: { OWNERID: id }
-      },
-      {
-        model: OrderMenu,
-        attributes: ["_id", "COUNT", "PRICE", "MENUID"],
-        include: [
-          {
-            model: OrderMenuOption,
-            attributes: ["_id"],
-            include: [
-              {
-                model: ShopMenuOptions,
-                attributes: ["_id"],
-                include: [
-                  {
-                    model: ShopOptions,
-                    attributes: ["OPTIONNAME", "PRICE"]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            model: ShopMenu,
-            attributes: ["MENUNAME"]
-          }
-        ]
-      }
-    ],
-    where: { ADMISSION: true },
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
-    offset: (page - 1) * ShowCount,
-    limit: ShowCount,
-    order: [["createdAt", "DESC"]]
-  });
+  const requests = await getOrderItems(id, page, { where: { ADMISSION: true, SHOPID: shop } });
 
   const count = await Order.count({
-    include: [
-      {
-        model: Shop,
-        where: { OWNERID: id }
-      }
-    ],
+    include: [{ model: Shop, where: { OWNERID: id } }],
     where: { ADMISSION: true }
   });
 
@@ -136,47 +83,7 @@ exports.getOrderListForUser = async (req, res, next) => {
   const page = req.params.page;
   const id = req.info._id;
 
-  const requests = await Order.findAll({
-    include: [
-      {
-        model: User,
-        attributes: ["USERNAME"]
-      },
-      {
-        model: OrderMenu,
-        attributes: ["_id", "COUNT", "PRICE", "MENUID"],
-        include: [
-          {
-            model: OrderMenuOption,
-            attributes: ["_id"],
-            include: [
-              {
-                model: ShopMenuOptions,
-                attributes: ["_id"],
-                include: [
-                  {
-                    model: ShopOptions,
-                    attributes: ["OPTIONNAME", "PRICE"]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            model: ShopMenu,
-            attributes: ["MENUNAME"]
-          }
-        ]
-      }
-    ],
-    where: { USERID: id },
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
-    offset: (page - 1) * ShowCount,
-    limit: ShowCount,
-    order: [["createdAt", "DESC"]]
-  });
-
-  console.log(JSON.stringify(requests[0]));
+  const requests = await getOrderItems(-1, page, { where: { USERID: id } });
 
   return res.json({ success: 0, lists: requests });
 };
@@ -209,4 +116,52 @@ exports.refuseOrder = async (req, res, next) => {
   return Order.update({ ADMISSION: false }, { where: { _id: id } })
     .then(() => res.json({ success: 0 }))
     .catch(() => res.status(500).json({ success: 1 }));
+};
+
+exports.getPushItemForShop = async (req, res, next) => {
+  const shop = req.params.id;
+
+  const push = await OrderPush.findOne({ where: { SHOPID: shop } });
+  if (push)
+    return OrderPush.destroy({ where: { _id: push._id } })
+      .then(() => res.json({ success: 0, id: push.ORDERID }))
+      .catch(() => res.status(500).json({ success: -1 }));
+
+  return res.json({ success: 0, id: -1 });
+};
+
+exports.getOrderItemInfo = async (req, res, next) => {
+  const owner = req.info._id;
+  const order = req.params.order;
+  const shop = req.params.id;
+
+  return Order.findOne({
+    include: [
+      { model: User, attributes: ["USERNAME"] },
+      { model: Shop, where: { OWNERID: owner } },
+      {
+        model: OrderMenu,
+        attributes: ["_id", "COUNT", "PRICE", "MENUID"],
+        include: [
+          {
+            model: OrderMenuOption,
+            attributes: ["_id"],
+            include: [
+              {
+                model: ShopMenuOptions,
+                attributes: ["_id"],
+                include: [{ model: ShopOptions, attributes: ["OPTIONNAME", "PRICE"] }]
+              }
+            ]
+          },
+          { model: ShopMenu, attributes: ["MENUNAME"] }
+        ]
+      }
+    ],
+    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
+    where: { _id: order, SHOPID: shop },
+    order: [["createdAt", "DESC"]]
+  })
+    .then(result => res.json(result))
+    .catch(() => res.status(500).json({ success: -1 }));
 };

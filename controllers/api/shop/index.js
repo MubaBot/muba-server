@@ -9,11 +9,14 @@ const ShopTempLatlng = require("@models").shop_temp_latlng;
 const ShopMenuOptions = require("@models").shop_menu_options;
 
 const Order = require("@models").order;
+const OrderPush = require("@models").order_push;
 const OrderMenu = require("@models").order_menu;
 const OrderMenuOption = require("@models").order_menu_option;
 
 const moment = require("moment");
 const Op = require("sequelize").Op;
+const Fn = require("sequelize").fn;
+const Col = require("sequelize").col;
 
 const SearchCount = 10;
 const LatLngUpdateCount = 1;
@@ -90,6 +93,10 @@ exports.getShopOptionInfo = async (req, res, next) => {
   return res.json({ success: 0, name: menu.MENUNAME, list: options });
 };
 
+exports.getShopOwnerCount = async (req, res, next) => {
+  return res.json({ success: 0 });
+};
+
 exports.searchShops = async (req, res, next) => {
   const keyword = req.params.keyword;
   const page = req.params.page;
@@ -98,11 +105,15 @@ exports.searchShops = async (req, res, next) => {
     include: [
       {
         model: ShopAddress
+      },
+      {
+        model: ShopMenu,
+        attributes: ["_id"],
+        where: {
+          [Op.or]: [{ MENUNAME: { [Op.like]: `%${keyword}%` } }, { "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` } }]
+        }
       }
     ],
-    where: {
-      SHOPNAME: { [Op.like]: `%${keyword}%` }
-    },
     offset: (page - 1) * SearchCount,
     limit: SearchCount
   });
@@ -423,7 +434,8 @@ exports.doOrder = async (req, res, next) => {
         sum += await addOrderMenuBySaleWithTransaction(order._id, item.id, item.count, sales, item.options, t);
       }
 
-      await Order.update({ PRICE: sum }, { where: { _id: order._id }, transaction: t });
+      await Order.update({ PRICE: sum, ADMISSION: null }, { where: { _id: order._id }, transaction: t });
+      await OrderPush.create({ ORDERID: order._id, SHOPID: shop }, { transaction: t });
 
       return res.json({ success: 0, price: sum });
     } catch (exception) {

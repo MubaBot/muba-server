@@ -1,7 +1,10 @@
 const Op = require("sequelize").Op;
 const sha512 = require("js-sha512");
 
+const jwt = require("./jwt");
+
 const Owner = require("@models").owner;
+const Shop = require("@models").shop;
 
 /*
  *=========
@@ -45,6 +48,26 @@ exports.register = async (req, res, next) => {
   })
     .then(r => res.send({ success: 0 }))
     .catch(e => res.status(500).send({ success: -7 }));
+};
+
+exports.requireOwner = async (req, res, next) => {
+  const decode = jwt.getDecodeData(req);
+
+  if (decode && decode.type === "OWNER") {
+    req.info = decode;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
+exports.shopAuthCheck = async (req, res, next) => {
+  const id = req.params.id || req.body.id;
+  const user = req.info._id;
+
+  const exist = await Shop.count({ where: { _id: id, OWNERID: user } });
+  if (!exist) return res.status(403).send("Permission denied");
+
+  return next();
 };
 
 /*

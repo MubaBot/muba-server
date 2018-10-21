@@ -2,26 +2,55 @@ const express = require("express");
 const router = express.Router();
 
 const Shop = require("@api/shop");
+const Order = require("@api/order");
 const Auth = require("@controllers/auth");
 
+/**
+ * Info
+ */
+router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
 router.get("/:id", Shop.getShopInfo);
-router.get("/:id/menu/:menu/sale", Shop.getShopSaleInfo);
-router.get("/:id/menu/:menu/option", Shop.getShopOptionInfo);
 router.get("/list/:page/:keyword(*)", Auth.isLogin, Shop.searchShops);
 
-router.post("/", Auth.requireAdmin, Shop.createShops);
-router.post("/:id/menu", Auth.requireOwner, Auth.shopAuthCheck, Shop.addShopMenu);
-router.post("/:id/menu/:menu/sale", Auth.requireOwner, Auth.shopAuthCheck, Shop.addShopMenuSale);
-router.post("/:id/option", Auth.requireOwner, Auth.shopAuthCheck, Shop.addShopOption);
-router.post("/:id/order", Auth.requireUser, Shop.doOrder);
+router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 
 router.put("/:id/latlng", Auth.getLoginInfo, Shop.setLatlng);
-router.put("/:id/menu/:menu", Auth.requireOwner, Auth.shopAuthCheck, Shop.modifyShopMenu);
-router.put("/:id/menu/:menu/sale/:sale", Auth.requireOwner, Auth.shopAuthCheck, Shop.modifyShopMenuSale);
-router.put("/:id/option/:option", Auth.requireOwner, Auth.shopAuthCheck, Shop.modifyShopOption);
 
-router.delete("/:id/menu/:menu", Auth.requireOwner, Auth.shopAuthCheck, Shop.deleteShopMenu);
-router.delete("/:id/menu/:menu/sale/:sale", Auth.requireOwner, Auth.shopAuthCheck, Shop.deleteShopMenuSale);
-router.delete("/:id/option/:option", Auth.requireOwner, Auth.shopAuthCheck, Shop.deleteShopOption);
+/**
+ * Menu
+ */
+router.get("/:id/menu/:menu/sale", Shop.getShopSaleInfo);
+router.get("/:id/menu/:menu/option", Shop.getShopOptionInfo);
+
+router.post("/:id/menu", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.addShopMenu);
+router.post("/:id/menu/:menu/sale", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.addShopMenuSale);
+
+router.put("/:id/menu/:menu", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.modifyShopMenu);
+router.put("/:id/menu/:menu/sale/:sale", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.modifyShopMenuSale);
+
+router.delete("/:id/menu/:menu", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.deleteShopMenu);
+router.delete("/:id/menu/:menu/sale/:sale", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.deleteShopMenuSale);
+
+/**
+ * Options
+ */
+router.post("/:id/option", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.addShopOption);
+
+router.put("/:id/option/:option", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.modifyShopOption);
+
+router.delete("/:id/option/:option", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.deleteShopOption);
+
+/**
+ * Order
+ */
+router.get("/:id/order/push", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getPushItemForShop);
+router.get("/:id/order/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwner);
+router.get("/:id/order/:order/info", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderItemInfo);
+router.get("/:id/order/admission/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
+
+router.put("/:id/order/:id/allow", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.allowOrder);
+router.put("/:id/order/:id/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
+
+router.post("/:id/order", Auth.requireUser, Shop.doOrder);
 
 module.exports = router;

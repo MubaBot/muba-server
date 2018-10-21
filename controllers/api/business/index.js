@@ -78,6 +78,7 @@ exports.registerBusiness = async (req, res, next) => {
       return res.json({ success: 0 });
     } catch (exception) {
       t.rollback();
+      console.log(exception);
       Files.resetBusinessFile(p, file);
       return res.status(500).json({ success: 1 });
     }

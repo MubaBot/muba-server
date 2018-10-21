@@ -51,6 +51,16 @@ module.exports = function(sequelize, DataTypes) {
       },
       sourceKey: "_id"
     });
+
+    order.hasMany(models.order_push, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "ORDERID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
   };
 
   return order;
