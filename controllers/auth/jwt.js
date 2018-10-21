@@ -9,7 +9,7 @@ const sign = (exports.sign = ({ iat, exp, ...data }) => {
       ...data
     },
     secretKey,
-    { expiresIn: "10m" }
+    { expiresIn: "1d" }
   );
 });
 

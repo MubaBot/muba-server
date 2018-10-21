@@ -67,14 +67,13 @@ exports.getAdminList = async (req, res, next) => {
   const id = req.info._id;
 
   const admin = await Admin.findAll({
-    where: { _id: { [Op.not]: id } },
     offset: (page - 1) * ShowCount,
     limit: ShowCount
   });
 
   const count = await Admin.count({});
 
-  return res.json({ success: 0, count: count - 1, displayCount: ShowCount, lists: admin });
+  return res.json({ success: 0, count: count, displayCount: ShowCount, lists: admin });
 };
 
 exports.requireAdmin = async (req, res, next) => {
