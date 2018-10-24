@@ -6,14 +6,19 @@ const models = require("@models");
 const BusinessCertificationRequestLog = require("@models").business_certification_request_log;
 const BusinessCertificationRequest = require("@models").business_certification_request;
 const BusinessCertification = require("@models").business_certification;
+
 const Shop = require("@models").shop;
+const ShopMenu = require("@models").shop_menu;
 const ShopAddress = require("@models").shop_address;
 
 const ShowCount = 10;
 
 exports.getShopList = async (req, res, next) => {
   const id = req.info._id;
-  const shops = await Shop.findAll({ where: { OWNERID: id } });
+  const shops = await Shop.findAll({
+    include: [{ model: ShopAddress }, { model: ShopMenu }],
+    where: { OWNERID: id }
+  });
 
   return res.json({ success: 0, lists: shops });
 };

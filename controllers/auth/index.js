@@ -9,7 +9,7 @@ exports.Admin = { ...require("./admin") };
  * Router
  */
 exports.checkLogin = (req, res) => {
-  return res.json({ isLogin: req.isLogin, id: req.id, token: req.token });
+  return res.json({ isLogin: req.isLogin, id: req.id, token: req.token, name: req.name });
 };
 
 exports.sendAuth = (req, res) => {
@@ -40,10 +40,13 @@ exports.isLogin = async (req, res, next) => {
 
   if (decode === "TokenExpiredError") {
     req.isLogin = true;
-    req.id = jwt.refreshToken(req)._id;
+    const refreshData = jwt.refreshToken(req);
+    req.id = refreshData._id;
+    req.name = refreshData.username;
   } else if (decode) {
     req.isLogin = true;
     req.id = decode._id;
+    req.name = decode.username;
   } else req.isLogin = false;
 
   return next();

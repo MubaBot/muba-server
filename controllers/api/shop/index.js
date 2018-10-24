@@ -15,8 +15,6 @@ const OrderMenuOption = require("@models").order_menu_option;
 
 const moment = require("moment");
 const Op = require("sequelize").Op;
-const Fn = require("sequelize").fn;
-const Col = require("sequelize").col;
 
 const SearchCount = 10;
 const LatLngUpdateCount = 1;
