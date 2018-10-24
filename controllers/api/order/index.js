@@ -11,6 +11,9 @@ const ShopMenu = require("@models").shop_menu;
 const ShopOptions = require("@models").shop_options;
 const ShopMenuOptions = require("@models").shop_menu_options;
 
+const moment = require("moment");
+const Op = require("sequelize").Op;
+
 const ShowCount = 10;
 
 const getOrderItems = async (owner = -1, page, { where }) => {
@@ -121,7 +124,17 @@ exports.refuseOrder = async (req, res, next) => {
 exports.getPushItemForShop = async (req, res, next) => {
   const shop = req.params.id;
 
-  const push = await OrderPush.findOne({ where: { SHOPID: shop } });
+  const push = await OrderPush.findOne({
+    where: {
+      SHOPID: shop,
+      createdAt: {
+        [Op.lte]: moment
+          .utc()
+          .subtract(10, "seconds")
+          .toDate()
+      }
+    }
+  });
   if (push)
     return OrderPush.destroy({ where: { _id: push._id } })
       .then(() => res.json({ success: 0, id: push.ORDERID }))
