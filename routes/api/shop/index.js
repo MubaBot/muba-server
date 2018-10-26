@@ -10,7 +10,8 @@ const Auth = require("@controllers/auth");
  */
 router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
 router.get("/:id", Shop.getShopInfo);
-router.get("/list/:page/:keyword(*)", Auth.isLogin, Shop.searchShops);
+router.get("/list/:page([0-9]*)/:keyword(*)", Auth.isLogin, Shop.searchShops);
+router.get("/list/sale/:page([0-9]*)/:lat/:lng/:time([0-9]*)", Auth.isLogin, Shop.Sale.searchSaleShops);
 
 router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 

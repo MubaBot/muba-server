@@ -19,6 +19,8 @@ const Op = require("sequelize").Op;
 const SearchCount = 10;
 const LatLngUpdateCount = 1;
 
+exports.Sale = { ...require("./sale") };
+
 exports.getShopInfo = async (req, res, next) => {
   const nowDate = parseInt(moment().format("YYYYMMDD"));
   const nowTime = parseInt(moment().format("HHmm"));
