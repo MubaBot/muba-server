@@ -36,31 +36,18 @@ exports.searchSaleShops = async (req, res, next) => {
       .format("HHmm")
   );
 
-  const shops = await Shop.findAll({
-    include: [
-      {
-        model: ShopAddress
-      },
-      {
-        model: ShopMenu,
-
-        include: [
-          {
-            model: Sale,
-            where: {
-              [Op.and]: [
-                { [Op.or]: [{ USEDATE: false }, { [Op.and]: [{ STARTDAY: { [Op.lte]: nowDate } }, { ENDDAY: { [Op.gte]: endDate } }] }] },
-                { [Op.or]: [{ USETIME: false }, { [Op.and]: [{ STARTTIME: { [Op.lte]: nowTime } }, { ENDTIME: { [Op.gte]: endTime } }] }] },
-                { [Op.or]: [{ LIMIT: -1 }, { COUNT: { [Op.gt]: 0 } }] }
-              ]
-            }
-          }
-        ]
-      }
-    ],
+  const sales = await Sale.findAll({
+    include: [{ model: ShopMenu }, { model: Shop, include: [{ model: ShopAddress }] }],
+    where: {
+      [Op.and]: [
+        { [Op.or]: [{ USEDATE: false }, { [Op.and]: [{ STARTDAY: { [Op.lte]: nowDate } }, { ENDDAY: { [Op.gte]: endDate } }] }] },
+        { [Op.or]: [{ USETIME: false }, { [Op.and]: [{ STARTTIME: { [Op.lte]: nowTime } }, { ENDTIME: { [Op.gte]: endTime } }] }] },
+        { [Op.or]: [{ LIMIT: -1 }, { COUNT: { [Op.gt]: 0 } }] }
+      ]
+    },
     offset: (page - 1) * SearchCount,
     limit: SearchCount
   });
 
-  return res.json({ success: 0, lists: shops });
+  return res.json({ success: 0, lists: sales });
 };

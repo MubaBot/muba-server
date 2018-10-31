@@ -7,11 +7,14 @@ module.exports = function(sequelize, DataTypes) {
       USERID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
 
       ADDRESS: { type: DataTypes.STRING, notNull: true },
+      ADDRESSDETAIL: { type: DataTypes.STRING },
       REQUIRE: { type: DataTypes.STRING },
       PHONE: { type: DataTypes.STRING, notNull: true },
       PRICE: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
+      VISIT: { type: DataTypes.BOOLEAN },
 
-      ADMISSION: { type: DataTypes.BOOLEAN }
+      ADMISSION: { type: DataTypes.INTEGER.UNSIGNED },
+      ADMISSIONMESSAGE: { type: DataTypes.STRING }
     },
     {
       timestamps: true,

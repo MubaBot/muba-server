@@ -40,6 +40,7 @@ const getOrderItems = async (owner = -1, page, { where }) => {
   ];
 
   if (owner !== -1) include.push({ model: Shop, where: { OWNERID: owner } });
+  else include.push({ model: Shop });
 
   const options = {
     include: include,
@@ -97,7 +98,7 @@ const checkPermissionShop = async (owner, shop) => {
 
 exports.allowOrder = async (req, res, next) => {
   const owner = req.info._id;
-  const id = req.params.id;
+  const id = req.params.order;
 
   const order = await Order.findOne({ where: { _id: id } });
   const permission = await checkPermissionShop(owner, order.SHOPID);
@@ -110,7 +111,7 @@ exports.allowOrder = async (req, res, next) => {
 
 exports.refuseOrder = async (req, res, next) => {
   const owner = req.info._id;
-  const id = req.params.id;
+  const id = req.params.order;
 
   const order = await Order.findOne({ where: { _id: id } });
   const permission = await checkPermissionShop(owner, order.SHOPID);

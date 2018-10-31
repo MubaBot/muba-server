@@ -304,8 +304,11 @@ exports.deleteShopMenu = async (req, res, next) => {
 const insertShop = shop => {
   models.sequelize.transaction(async t => {
     try {
+      console.log(shop.place);
+      const ADDRESS = [shop.place.state, shop.place.city, shop.place.address1].join(" ");
+      const ADDRESS_DETAIL = shop.place.options;
       const s = await Shop.create({ OWNERID: null, SHOPNAME: shop.name, PHONE: shop.tel }, { transaction: t });
-      await ShopAddress.create({ SHOPID: s._id, ADDRESS: JSON.stringify(shop.place) }, { transaction: t });
+      await ShopAddress.create({ SHOPID: s._id, ADDRESS: ADDRESS, ADDRESSDETAIL: ADDRESS_DETAIL }, { transaction: t });
       await ShopCrawler.create({ SHOPID: s._id, SEARCHURL: shop.url }, { transaction: t });
 
       for (var i in shop.menus) await ShopMenu.create({ SHOPID: s._id, MENUNAME: shop.menus[i].name, PRICE: shop.menus[i].price }, { transaction: t });
@@ -429,9 +432,9 @@ exports.doOrder = async (req, res, next) => {
       for (var i in cart) {
         const item = cart[i];
 
-        const sales = await getShopMenuWithSaleWithTransaction(item.id, t);
+        const sales = await getShopMenuWithSaleWithTransaction(item.item, t);
 
-        sum += await addOrderMenuBySaleWithTransaction(order._id, item.id, item.count, sales, item.options, t);
+        sum += await addOrderMenuBySaleWithTransaction(order._id, item.item, item.count, sales, item.options, t);
       }
 
       await Order.update({ PRICE: sum, ADMISSION: null }, { where: { _id: order._id }, transaction: t });

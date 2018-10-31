@@ -49,8 +49,8 @@ router.get("/:id/order/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck
 router.get("/:id/order/:order/info", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderItemInfo);
 router.get("/:id/order/admission/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
 
-router.put("/:id/order/:id/allow", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.allowOrder);
-router.put("/:id/order/:id/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
+router.put("/:id/order/:order/allow", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.allowOrder);
+router.put("/:id/order/:order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
 
 router.post("/:id/order", Auth.requireUser, Shop.doOrder);
 

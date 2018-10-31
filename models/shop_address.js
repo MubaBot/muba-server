@@ -5,6 +5,7 @@ module.exports = function(sequelize, DataTypes) {
       _id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
       SHOPID: { type: DataTypes.INTEGER.UNSIGNED, unique: true, notNull: true },
       ADDRESS: { type: DataTypes.STRING, notNull: true },
+      ADDRESSDETAIL: { type: DataTypes.STRING, notNull: true },
       ADDRLAT: { type: DataTypes.DOUBLE, defaultValue: 0 },
       ADDRLNG: { type: DataTypes.DOUBLE, defaultValue: 0 },
       ADMIN: { type: DataTypes.BOOLEAN, defaultValue: false } // If true was setting by admin.

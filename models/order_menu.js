@@ -4,6 +4,7 @@ module.exports = function(sequelize, DataTypes) {
     {
       _id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
       ORDERID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
+      SAILID: { type: DataTypes.INTEGER.UNSIGNED },
 
       MENUID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
       COUNT: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
