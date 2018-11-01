@@ -4,7 +4,8 @@ module.exports = function(sequelize, DataTypes) {
     {
       _id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
       OWNERID: { type: DataTypes.INTEGER.UNSIGNED },
-      OPEN: { type: DataTypes.BOOLEAN },
+      OPEN: { type: DataTypes.BOOLEAN, defaultValue: false },
+      // DELIVERY: { type: DataTypes.BOOLEAN, defaultValue: false },
       SHOPNAME: { type: DataTypes.STRING, notNull: true },
       PHONE: { type: DataTypes.STRING },
       HOMEPAGE: { type: DataTypes.STRING }

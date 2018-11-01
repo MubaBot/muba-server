@@ -126,11 +126,12 @@ exports.addShopMenu = async (req, res, next) => {
   const name = req.body.name;
   const price = req.body.price;
   const sold = req.body.sold;
+  const rep = req.body.rep;
 
   const exist = await ShopMenu.findOne({ where: { SHOPID: id, MENUNAME: name } });
   if (exist) return res.status(409).json({ success: -1 });
 
-  return ShopMenu.create({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold })
+  return ShopMenu.create({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep })
     .then(() => res.json({ success: 0 }))
     .catch(() => res.status(500).json({ success: 1 }));
 };
@@ -275,6 +276,7 @@ exports.modifyShopMenu = async (req, res, next) => {
   const name = req.body.name;
   const price = req.body.price;
   const sold = req.body.sold;
+  const rep = req.body.rep;
 
   const exist = await ShopMenu.findOne({ where: { _id: menu } });
   if (!exist) return res.status(404).json({ success: -1 });
@@ -284,7 +286,7 @@ exports.modifyShopMenu = async (req, res, next) => {
     if (newMenu) return res.status(409).json({ success: -1 });
   }
 
-  return ShopMenu.update({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold }, { where: { _id: menu } })
+  return ShopMenu.update({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep }, { where: { _id: menu } })
     .then(() => res.json({ success: 0 }))
     .catch(() => res.status(500).json({ success: 1 }));
 };
@@ -304,7 +306,6 @@ exports.deleteShopMenu = async (req, res, next) => {
 const insertShop = shop => {
   models.sequelize.transaction(async t => {
     try {
-      console.log(shop.place);
       const ADDRESS = [shop.place.state, shop.place.city, shop.place.address1].join(" ");
       const ADDRESS_DETAIL = shop.place.options;
       const s = await Shop.create({ OWNERID: null, SHOPNAME: shop.name, PHONE: shop.tel }, { transaction: t });
@@ -449,7 +450,7 @@ exports.doOrder = async (req, res, next) => {
   });
 };
 
-const shopLatlngUpdate = async (user, shop, lat, lng) => {
+const shopLatlngUpdateByUser = async (user, shop, lat, lng) => {
   const s = await ShopAddress.findOne({ where: { SHOPID: shop } });
   if (!s || s.ADMIN) return false;
 
@@ -474,6 +475,15 @@ const shopLatlngUpdate = async (user, shop, lat, lng) => {
   return true;
 };
 
+const shopLatlngUpdateByOwner = async (owner, shop, address, lat, lng) => {
+  const s = await Shop.findOne({ where: { OWNERID: owner } });
+  if (!s) return false;
+
+  return ShopAddress.update({ ADDRESS: address, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true }, { where: { SHOPID: shop } })
+    .then(() => true)
+    .catch(() => false);
+};
+
 exports.setLatlng = async (req, res, next) => {
   if (!req.info) return res.status(500).json({ success: 1 });
 
@@ -481,6 +491,8 @@ exports.setLatlng = async (req, res, next) => {
   const lng = req.body.lng;
   const user = req.info._id;
   const shop = req.params.id;
+
+  const type = req.info.type;
 
   if (!lat) return res.status(412).json({ success: -1 });
   if (!lng) return res.status(412).json({ success: -2 });
@@ -491,9 +503,43 @@ exports.setLatlng = async (req, res, next) => {
   if (!/^[\d]*$/.test(user)) return res.status(412).json({ success: -3 });
   if (!/^[\d]*$/.test(shop)) return res.status(412).json({ success: -4 });
 
-  await shopLatlngUpdate(user, shop, lat, lng);
+  switch (type) {
+    case "OWNER":
+      const result = await shopLatlngUpdateByOwner(user, shop, req.body.address, lat, lng);
+      if (!result) return res.status(409).json({ success: -2 });
+      break;
+    case "USER":
+      await shopLatlngUpdateByUser(user, shop, lat, lng);
+      break;
+    default:
+      return res.status(409).json({ success: -1 });
+  }
 
   return res.json({ success: 0 });
+};
+
+exports.updateShopInfo = async (req, res, next) => {
+  const name = req.body.name;
+  const detail = req.body.detail;
+  const phone = req.body.phone;
+  const homepage = req.body.homepage;
+
+  const shop = req.params.id;
+
+  if (!name) return res.status(412).json({ success: -1 });
+
+  return models.sequelize.transaction(async t => {
+    try {
+      await Shop.update({ SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage }, { where: { _id: shop }, transaction: t });
+      await ShopAddress.update({ ADDRESSDETAIL: detail }, { where: { SHOPID: shop }, transaction: t });
+
+      return res.json({ success: 0 });
+    } catch (exception) {
+      console.log(exception);
+      t.rollback();
+      return res.status(500).json({ success: -1 });
+    }
+  });
 };
 
 /**

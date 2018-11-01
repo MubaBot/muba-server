@@ -15,6 +15,7 @@ router.get("/list/sale/:page([0-9]*)/:lat/:lng/:time([0-9]*)", Auth.isLogin, Sho
 
 router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 
+router.put("/:id", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.updateShopInfo);
 router.put("/:id/latlng", Auth.getLoginInfo, Shop.setLatlng);
 
 /**

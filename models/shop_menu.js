@@ -7,7 +7,8 @@ module.exports = function(sequelize, DataTypes) {
       MENUNAME: { type: DataTypes.STRING, notNull: true },
       PRICE: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
       URL: { type: DataTypes.STRING },
-      SOLD: { type: DataTypes.BOOLEAN, defaultValue: false }
+      SOLD: { type: DataTypes.BOOLEAN, defaultValue: false },
+      REP: { type: DataTypes.BOOLEAN, defaultValue: false } // 대표 메뉴
     },
     {
       timestamps: false,
