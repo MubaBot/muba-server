@@ -47,6 +47,16 @@ module.exports = function(sequelize, DataTypes) {
       },
       targetKey: "_id"
     });
+
+    sale.hasMany(models.order_menu, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "SALEID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
   };
 
   return sale;

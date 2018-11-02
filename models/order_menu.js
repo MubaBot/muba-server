@@ -4,7 +4,7 @@ module.exports = function(sequelize, DataTypes) {
     {
       _id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
       ORDERID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
-      SAILID: { type: DataTypes.INTEGER.UNSIGNED },
+      SALEID: { type: DataTypes.INTEGER.UNSIGNED },
 
       MENUID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
       COUNT: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
@@ -34,6 +34,16 @@ module.exports = function(sequelize, DataTypes) {
       onDelete: "CASCADE",
       foreignKey: {
         name: "MENUID",
+        allowNull: false
+      },
+      targetKey: "_id"
+    });
+
+    order_menu.belongsTo(models.sale, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "SALEID",
         allowNull: false
       },
       targetKey: "_id"
