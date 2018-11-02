@@ -53,7 +53,7 @@ module.exports = function(sequelize, DataTypes) {
       onDelete: "CASCADE",
       foreignKey: {
         name: "SALEID",
-        allowNull: false
+        allowNull: true
       },
       sourceKey: "_id"
     });
