@@ -29,7 +29,7 @@ exports.moveShops = async (req, res, next) => {
   if (!/^[\d]*$/.test(count)) return res.status(412).json({ success: -2 });
 
   return request({
-    method: "PUT",
+    method: "POST",
     url: "/shops/move",
     token: req.token,
     body: { count: count, page: page },
@@ -51,6 +51,27 @@ exports.deleteShopById = async (req, res, next) => {
     method: "DELETE",
     url: "/shops/" + id,
     token: req.token,
+    then: result => res.json({ success: 0 }),
+    error: err => {
+      switch (err.response.body.success) {
+        default:
+          return res.status(500).json({ success: 1 });
+      }
+    }
+  });
+};
+
+exports.reSearchShop = async (req, res, next) => {
+  const count = req.body.count;
+
+  if (!count) return res.status(412).json({ success: -1 });
+  if (!/^[\d]*$/.test(count)) return res.status(412).json({ success: -2 });
+
+  return request({
+    method: "PUT",
+    url: "/shops/search",
+    token: req.token,
+    body: { count: count },
     then: result => res.json({ success: 0 }),
     error: err => {
       switch (err.response.body.success) {

@@ -5,6 +5,7 @@ const OrderPush = require("@models").order_push;
 const OrderMenu = require("@models").order_menu;
 const OrderMenuOption = require("@models").order_menu_option;
 
+const Sale = require("@models").sale;
 const User = require("@models").user;
 const Shop = require("@models").shop;
 const ShopMenu = require("@models").shop_menu;
@@ -21,7 +22,7 @@ const getOrderItems = async (owner = -1, page, { where }) => {
     { model: User, attributes: ["USERNAME"] },
     {
       model: OrderMenu,
-      attributes: ["_id", "COUNT", "PRICE", "MENUID"],
+      attributes: ["_id", "COUNT", "PRICE", "MENUID", "SALEID"],
       include: [
         {
           model: OrderMenuOption,
@@ -30,7 +31,7 @@ const getOrderItems = async (owner = -1, page, { where }) => {
             {
               model: ShopMenuOptions,
               attributes: ["_id"],
-              include: [{ model: ShopOptions, attributes: ["OPTIONNAME", "PRICE"] }]
+              include: [{ model: ShopOptions, attributes: ["_id", "OPTIONNAME", "PRICE"] }]
             }
           ]
         },
@@ -44,7 +45,7 @@ const getOrderItems = async (owner = -1, page, { where }) => {
 
   const options = {
     include: include,
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "_id", "USERID", "createdAt"],
+    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "VISIT", "_id", "USERID", "createdAt"],
     where: where,
     offset: (page - 1) * ShowCount,
     limit: ShowCount,
@@ -104,7 +105,7 @@ exports.allowOrder = async (req, res, next) => {
   const permission = await checkPermissionShop(owner, order.SHOPID);
   if (!permission) return res.status(403).json({ success: 1 });
 
-  return Order.update({ ADMISSION: true }, { where: { _id: id } })
+  return Order.update({ ADMISSION: 1 }, { where: { _id: id } })
     .then(() => res.json({ success: 0 }))
     .catch(() => res.status(500).json({ success: 1 }));
 };
@@ -113,13 +114,28 @@ exports.refuseOrder = async (req, res, next) => {
   const owner = req.info._id;
   const id = req.params.order;
 
-  const order = await Order.findOne({ where: { _id: id } });
-  const permission = await checkPermissionShop(owner, order.SHOPID);
+  const orders = await getOrderItems(owner, 1, { where: { _id: id } });
+  if (orders.length === 0) return res.status(403).json({ success: 1 });
+
+  const permission = await checkPermissionShop(owner, orders[0].SHOPID);
   if (!permission) return res.status(403).json({ success: 1 });
 
-  return Order.update({ ADMISSION: false }, { where: { _id: id } })
-    .then(() => res.json({ success: 0 }))
-    .catch(() => res.status(500).json({ success: 1 }));
+  return models.sequelize.transaction(async t => {
+    try {
+      const menus = orders[0].order_menus;
+      for (var i in menus) await resetSaleCountWithTransaction(menus[i], t);
+      await Order.update({ ADMISSION: 0 }, { where: { _id: id }, transaction: t });
+      await OrderPush.destroy({ where: { ORDERID: id }, transaction: t });
+
+      // reset sale
+
+      return res.json({ success: 0 });
+    } catch (exception) {
+      console.log(exception);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
 };
 
 exports.getPushItemForShop = async (req, res, next) => {
@@ -164,7 +180,7 @@ exports.getOrderItemInfo = async (req, res, next) => {
               {
                 model: ShopMenuOptions,
                 attributes: ["_id"],
-                include: [{ model: ShopOptions, attributes: ["OPTIONNAME", "PRICE"] }]
+                include: [{ model: ShopOptions, attributes: ["_id", "OPTIONNAME", "PRICE"] }]
               }
             ]
           },
@@ -178,4 +194,42 @@ exports.getOrderItemInfo = async (req, res, next) => {
   })
     .then(result => res.json(result))
     .catch(() => res.status(500).json({ success: -1 }));
+};
+
+exports.cancelOrder = async (req, res, next) => {
+  const user = req.info._id;
+  const id = req.params.order;
+
+  const orders = await getOrderItems(-1, 1, { where: { _id: id } });
+  if (orders.length === 0) return res.status(403).json({ success: 1 });
+
+  return models.sequelize.transaction(async t => {
+    try {
+      const menus = orders[0].order_menus;
+      for (var i in menus) await resetSaleCountWithTransaction(menus[i], t);
+
+      await Order.update({ ADMISSION: 2 }, { where: { _id: id }, transaction: t });
+      await OrderPush.destroy({ where: { ORDERID: id }, transaction: t });
+
+      return res.json({ success: 0 });
+    } catch (exception) {
+      console.log(exception);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
+};
+
+const resetSaleCountWithTransaction = async (menu, transaction) => {
+  try {
+    if (menu.SALEID === null) return true;
+
+    const sale = await Sale.findOne({ where: { _id: menu.SALEID }, transaction: transaction });
+    if (!sale) return false;
+
+    await Sale.update({ COUNT: sale.COUNT + menu.COUNT }, { where: { _id: menu.SALEID }, transaction: transaction });
+    return true;
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };

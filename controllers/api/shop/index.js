@@ -1,3 +1,6 @@
+const path = require("path");
+const Files = require("@controllers/files");
+
 const models = require("@models");
 const Sale = require("@models").sale;
 const Shop = require("@models").shop;
@@ -13,8 +16,15 @@ const OrderPush = require("@models").order_push;
 const OrderMenu = require("@models").order_menu;
 const OrderMenuOption = require("@models").order_menu_option;
 
+const UserAddress = require("@models").user_address;
+
 const moment = require("moment");
 const Op = require("sequelize").Op;
+const Fn = require("sequelize").fn;
+const Col = require("sequelize").col;
+const sequelize = require("sequelize");
+const Literal = require("sequelize").literal;
+const QueryTypes = require("sequelize").QueryTypes;
 
 const SearchCount = 10;
 const LatLngUpdateCount = 1;
@@ -98,25 +108,63 @@ exports.getShopOwnerCount = async (req, res, next) => {
 };
 
 exports.searchShops = async (req, res, next) => {
-  const keyword = req.params.keyword;
+  // const keyword = req.params.keyword;
+  const keyword = ["%", req.params.keyword, "%"].join("");
   const page = req.params.page;
+  const lat = req.params.lat;
+  const lng = req.params.lng;
+  // const keywords = keyword.split(" ").map((v, i) => `%${v}%`);
 
-  const shops = await Shop.findAll({
-    include: [
-      {
-        model: ShopAddress
-      },
-      {
-        model: ShopMenu,
-        attributes: ["_id"],
-        where: {
-          [Op.or]: [{ MENUNAME: { [Op.like]: `%${keyword}%` } }, { "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` } }]
-        }
-      }
-    ],
-    offset: (page - 1) * SearchCount,
-    limit: SearchCount
-  });
+  // const shops = await Shop.findAll({
+  //   include: [
+  //     {
+  //       model: ShopAddress,
+  //       attributes: ["_id", "ADDRESS", "ADDRESSDETAIL", "ADDRLAT", "ADDRLNG"]
+  //     },
+  //     {
+  //       model: ShopMenu,
+  //       attributes: ["_id"],
+  //       where: {
+  //         // [Op.or]: [{ MENUNAME: { [Op.iLike]: { [Op.any]: keywords } } }, { "$shop.SHOPNAME$": { [Op.in]: { [Op.like]: keywords } } }]
+  //         [Op.or]: [{ MENUNAME: { [Op.like]: `%${keyword}%` } }, { "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` } }]
+  //       }
+  //     }
+  //   ],
+  //   offset: (page - 1) * SearchCount,
+  //   limit: SearchCount,
+  //   order: [[Literal(`(pow((ADDRLAT-${lat}), 2) + pow((ADDRLNG-${lng}), 2))`), "ASC"]]
+  // }).catch(err => {
+  //   console.log(err);
+  //   return [];
+  // });
+
+  const shops = await models.sequelize
+    .query(
+      "SELECT `shop`.*, `shop_address`.`_id` AS `shop_address._id`, `shop_address`.`ADDRESS` AS `ADDRESS`, `shop_address`.`ADDRESSDETAIL` AS `ADDRESSDETAIL`, `shop_address`.`ADDRLAT` AS `ADDRLAT`, `shop_address`.`ADDRLNG` AS `ADDRLNG`, (pow((ADDRLAT - :lat), 2) + pow((ADDRLNG - :lng), 2)) AS `distance` \
+  FROM ( \
+  	SELECT `shop`.`_id`, `shop`.`OWNERID`, `shop`.`OPEN`, `shop`.`DELIVERY`, `shop`.`SHOPNAME`, `shop`.`PHONE`, `shop`.`HOMEPAGE`, `shop`.`createdAt`, `shop`.`updatedAt` \
+  	FROM  `shop` AS `shop` \
+  	WHERE ( \
+      SELECT `SHOPID` FROM `shop_menu` AS `shop_menus` \
+      WHERE ((`shop_menus`.`MENUNAME` LIKE (:keyword) OR `shop`.`SHOPNAME` LIKE (:keyword)) AND `shop_menus`.`SHOPID` = `shop`.`_id`) LIMIT 1 \
+    ) \
+      IS NOT NULL\
+      LIMIT :offset, :limit\
+  ) AS `shop`  \
+  LEFT OUTER JOIN \
+  	`shop_address` AS `shop_address`\
+      ON `shop`.`_id` = `shop_address`.`SHOPID`\
+  INNER JOIN \
+  	`shop_menu` AS `shop_menus`\
+      ON `shop`.`_id` = `shop_menus`.`SHOPID` AND (`shop_menus`.`MENUNAME` LIKE (:keyword) OR `shop`.`SHOPNAME` LIKE (:keyword)) \
+  GROUP BY `shop`.`_id`, `shop`.`OWNERID`, `shop`.`OPEN`, `shop`.`DELIVERY`, `shop`.`SHOPNAME`, `shop`.`PHONE`, `shop`.`HOMEPAGE`, `shop`.`createdAt`, `shop`.`updatedAt`, `shop_address._id`, `ADDRESS`,`ADDRESSDETAIL`,`ADDRLAT`,`ADDRLNG`,`distance` \
+  ORDER BY (`shop`.`OWNERID` IS NOT NULL) DESC, `distance` ASC;",
+      { replacements: { lat: lat, lng: lng, keyword: keyword, offset: (page - 1) * SearchCount, limit: SearchCount }, type: models.sequelize.QueryTypes.SELECT }
+    )
+    .catch(err => {
+      console.log(err);
+      return [];
+    });
 
   return res.json({ success: 0, lists: shops });
 };
@@ -372,23 +420,23 @@ const addOrderMenuBySaleWithTransaction = async (order, menu, count, sales, opti
 
     if (sale.COUNT > count) {
       await saleMenuWithTransaction(sale._id, sale.COUNT - count, transaction);
-      return sum + (await addOrderMenuWithTransaction(order, menu, count, sale.PRICE, options, transaction));
+      return sum + (await addOrderMenuWithTransaction(order, menu, sale._id, count, sale.PRICE, options, transaction));
     }
 
     await saleMenuWithTransaction(sale._id, 0, transaction);
-    sum += await addOrderMenuWithTransaction(order, menu, sale.COUNT, sale.PRICE, options, transaction);
+    sum += await addOrderMenuWithTransaction(order, menu, sale._id, sale.COUNT, sale.PRICE, options, transaction);
     count -= sale.COUNT;
   }
 
-  return sum + (await addOrderMenuWithTransaction(order, menu, count, sales.PRICE, options, transaction));
+  return sum + (await addOrderMenuWithTransaction(order, menu, null, count, sales.PRICE, options, transaction));
 };
 
 const saleMenuWithTransaction = async (id, count, transaction) => {
   return Sale.update({ COUNT: count }, { where: { _id: id }, transaction: transaction });
 };
 
-const addOrderMenuWithTransaction = async (order, menu, count, price, options, transaction) => {
-  const om = await OrderMenu.create({ ORDERID: order, MENUID: menu, COUNT: count, PRICE: price }, { transaction: transaction });
+const addOrderMenuWithTransaction = async (order, menu, sale, count, price, options, transaction) => {
+  const om = await OrderMenu.create({ ORDERID: order, MENUID: menu, SALEID: sale, COUNT: count, PRICE: price }, { transaction: transaction });
   var sum = price;
   for (var i in options) {
     if (options[i]) {
@@ -417,17 +465,29 @@ const addOrderMenuWithTransaction = async (order, menu, count, price, options, t
   return sum * count;
 };
 
+const updateUserAddress = async (user, address, address_detail, lat, lng, transaction) => {
+  const exist = await UserAddress.findOne({ where: { USERID: user, ADDRESS1: address, ADDRESS2: address_detail } });
+
+  if (exist) return UserAddress.update({}, { where: { _id: exist._id }, transaction: transaction });
+  return UserAddress.create({ USERID: user, ADDRESS1: address, ADDRESS2: address_detail, LAT: lat, LNG: lng }, { transaction: transaction });
+};
+
 exports.doOrder = async (req, res, next) => {
   const shop = req.params.id;
   const user = req.info._id;
   const cart = req.body.cart;
   const address = req.body.address;
+  const address_detail = req.body.address_detail;
   const require = req.body.require;
   const phone = req.body.phone;
+  const visit = req.body.visit;
+  const lat = req.body.lat;
+  const lng = req.body.lng;
 
   return models.sequelize.transaction(async t => {
     try {
-      const order = await Order.create({ SHOPID: shop, USERID: user, ADDRESS: address, REQUIRE: require, PHONE: phone }, { transaction: t });
+      const order = await Order.create({ SHOPID: shop, USERID: user, ADDRESS: address, REQUIRE: require, PHONE: phone, VISIT: visit }, { transaction: t });
+      console.log(order);
 
       var sum = 0;
       for (var i in cart) {
@@ -438,7 +498,9 @@ exports.doOrder = async (req, res, next) => {
         sum += await addOrderMenuBySaleWithTransaction(order._id, item.item, item.count, sales, item.options, t);
       }
 
-      await Order.update({ PRICE: sum, ADMISSION: null }, { where: { _id: order._id }, transaction: t });
+      if (!visit) await updateUserAddress(user, address, address_detail, lat, lng, t);
+
+      await await Order.update({ PRICE: sum, ADMISSION: null }, { where: { _id: order._id }, transaction: t });
       await OrderPush.create({ ORDERID: order._id, SHOPID: shop }, { transaction: t });
 
       return res.json({ success: 0, price: sum });
@@ -523,6 +585,8 @@ exports.updateShopInfo = async (req, res, next) => {
   const detail = req.body.detail;
   const phone = req.body.phone;
   const homepage = req.body.homepage;
+  const open = req.body.open;
+  const delivery = req.body.delivery;
 
   const shop = req.params.id;
 
@@ -530,7 +594,7 @@ exports.updateShopInfo = async (req, res, next) => {
 
   return models.sequelize.transaction(async t => {
     try {
-      await Shop.update({ SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage }, { where: { _id: shop }, transaction: t });
+      await Shop.update({ SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, OPEN: open, DELIVERY: delivery }, { where: { _id: shop }, transaction: t });
       await ShopAddress.update({ ADDRESSDETAIL: detail }, { where: { SHOPID: shop }, transaction: t });
 
       return res.json({ success: 0 });
@@ -540,6 +604,32 @@ exports.updateShopInfo = async (req, res, next) => {
       return res.status(500).json({ success: -1 });
     }
   });
+};
+
+exports.updateMenuPhoto = async (req, res, next) => {
+  const file = req.files[0];
+  if (!file) return res.status(412).json({ success: -1 });
+
+  const name = file.filename;
+  const ext = path.extname(file.originalname);
+
+  const shop = req.params.id;
+  const menu = req.params.menu;
+
+  const exist = await ShopMenu.findOne({ where: { _id: menu, SHOPID: shop } });
+  if (!exist) return res.status(412).json({ success: -1 });
+
+  if (exist.URL) await Files.removeShopMenuFile(exist.URL);
+
+  const p = await Files.saveFileFromTempAsRandomName(name, ext.toLowerCase(), "ShopMenu");
+  if (p === false) return res.status(500).json({ success: -1 });
+
+  return ShopMenu.update({ URL: p }, { where: { _id: menu, SHOPID: shop } })
+    .then(() => res.json({ success: 0 }))
+    .catch(() => {
+      Files.resetShopMenuFile(p, name);
+      return res.status(500).json({ success: 1 });
+    });
 };
 
 /**

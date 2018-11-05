@@ -6,7 +6,9 @@ const Auth = require("@controllers/auth");
 
 router.get("/list/:page?", Auth.Admin.requireAdmin, Shops.getList);
 
-router.put("/move", Auth.Admin.requireAdmin, Shops.moveShops);
+router.post("/move", Auth.Admin.requireAdmin, Shops.moveShops);
+
+router.put("/search", Auth.Admin.requireAdmin, Shops.reSearchShop);
 
 router.delete("/:id", Auth.Admin.requireAdmin, Shops.deleteShopById);
 

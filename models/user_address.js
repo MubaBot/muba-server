@@ -6,8 +6,8 @@ module.exports = function(sequelize, DataTypes) {
       USERID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
       ADDRESS1: { type: DataTypes.STRING },
       ADDRESS2: { type: DataTypes.STRING },
-      LAT: { type: DataTypes.INTEGER.UNSIGNED },
-      LNG: { type: DataTypes.INTEGER.UNSIGNED }
+      LAT: { type: DataTypes.DOUBLE },
+      LNG: { type: DataTypes.DOUBLE }
     },
     {
       timestamps: false,

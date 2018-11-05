@@ -11,8 +11,8 @@ const SearchCount = 10;
 
 exports.searchSaleShops = async (req, res, next) => {
   const page = req.params.page;
-  // const lat = req.params.lat;
-  // const lng = req.params.lng;
+  const lat = req.params.lat;
+  const lng = req.params.lng;
   const time = req.params.time;
 
   const nowDate = parseInt(
