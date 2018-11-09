@@ -4,6 +4,7 @@ const Order = require("@models").order;
 const OrderPush = require("@models").order_push;
 const OrderMenu = require("@models").order_menu;
 const OrderMenuOption = require("@models").order_menu_option;
+const OrderRefuseMessage = require("@models").order_refuse_message;
 
 const Sale = require("@models").sale;
 const User = require("@models").user;
@@ -37,7 +38,8 @@ const getOrderItems = async (owner = -1, page, { where }) => {
         },
         { model: ShopMenu, attributes: ["MENUNAME"] }
       ]
-    }
+    },
+    { model: OrderRefuseMessage, require: false }
   ];
 
   if (owner !== -1) include.push({ model: Shop, where: { OWNERID: owner } });
@@ -45,7 +47,7 @@ const getOrderItems = async (owner = -1, page, { where }) => {
 
   const options = {
     include: include,
-    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "VISIT", "_id", "USERID", "createdAt"],
+    attributes: ["ADDRESS", "ADMISSION", "PHONE", "PRICE", "REQUIRE", "SHOPID", "VISIT", "_id", "USERID", "createdAt", "ADMISSIONID"],
     where: where,
     offset: (page - 1) * ShowCount,
     limit: ShowCount,
@@ -113,6 +115,7 @@ exports.allowOrder = async (req, res, next) => {
 exports.refuseOrder = async (req, res, next) => {
   const owner = req.info._id;
   const id = req.params.order;
+  const admission = req.params.admission;
 
   const orders = await getOrderItems(owner, 1, { where: { _id: id } });
   if (orders.length === 0) return res.status(403).json({ success: 1 });
@@ -124,7 +127,7 @@ exports.refuseOrder = async (req, res, next) => {
     try {
       const menus = orders[0].order_menus;
       for (var i in menus) await resetSaleCountWithTransaction(menus[i], t);
-      await Order.update({ ADMISSION: 0 }, { where: { _id: id }, transaction: t });
+      await Order.update({ ADMISSION: 0, ADMISSIONID: admission }, { where: { _id: id }, transaction: t });
       await OrderPush.destroy({ where: { ORDERID: id }, transaction: t });
 
       // reset sale
@@ -218,6 +221,50 @@ exports.cancelOrder = async (req, res, next) => {
       return res.status(500).json({ success: 1 });
     }
   });
+};
+
+exports.getRefuseMessage = async (req, res, next) => {
+  const shop = req.params.id;
+
+  return OrderRefuseMessage.findAll({ where: { SHOPID: shop } })
+    .then(messages => res.json({ success: 0, lists: messages }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.addRefuseMessage = async (req, res, next) => {
+  const shop = req.params.id;
+  const name = req.body.name;
+  const message = req.body.message;
+
+  if (!name) return res.status(412).json({ success: -2 });
+  if (!message) return res.status(412).json({ success: -3 });
+
+  const exist = await OrderRefuseMessage.findOne({ where: { SHOPID: shop, NAME: name } });
+  if (exist) return res.status(409).json({ success: -4 });
+
+  return OrderRefuseMessage.create({ SHOPID: shop, NAME: name, MESSAGE: message })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.modifyOrderRefuseMessage = async (req, res, next) => {
+  const shop = req.params.id;
+  const refuse = req.params.refuse;
+  const name = req.body.name;
+  const message = req.body.message;
+
+  if (!name) return res.status(412).json({ success: -2 });
+  if (!message) return res.status(412).json({ success: -3 });
+
+  const r = await OrderRefuseMessage.findOne({ where: { _id: refuse, SHOPID: shop } });
+  if (!r) return res.status(409).json({ success: -4 });
+
+  const exist = await OrderRefuseMessage.findOne({ where: { SHOPID: shop, NAME: name, _id: { [Op.not]: refuse } } });
+  if (exist) return res.status(409).json({ success: -4 });
+
+  return OrderRefuseMessage.update({ NAME: name, MESSAGE: message }, { where: { _id: refuse } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
 };
 
 const resetSaleCountWithTransaction = async (menu, transaction) => {

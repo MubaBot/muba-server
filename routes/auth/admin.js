@@ -4,7 +4,7 @@ const router = express.Router();
 const Auth = require("@controllers/auth");
 const Admin = require("@controllers/auth/admin");
 
-router.get("/:page([0-9]*)", Auth.Admin.requireAdmin, Admin.getAdminList);
+router.get("/:page([0-9]*)", Admin.requireAdmin, Admin.getAdminList);
 router.get("/exist", Admin.existAdminUser);
 router.get("/me", Auth.Admin.requireAdmin, Auth.sendInformation);
 

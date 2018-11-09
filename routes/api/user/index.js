@@ -8,11 +8,6 @@ const User = require("@controllers/api/user");
 router.get("/", Auth.requireLogin, User.getUserInfo);
 router.put("/", Auth.requireLogin, User.setUserInfo);
 
-router.get("/address", Auth.requireLogin, User.getAddress);
-router.post("/address", Auth.requireLogin, User.setAddress);
-
-router.get("/test", User.setAddress);
-
 router.use("/order", UserOrderRouter);
 
 module.exports = router;

@@ -6,6 +6,8 @@ const jwt = require("./jwt");
 const Owner = require("@models").owner;
 const Shop = require("@models").shop;
 
+const ShowCount = 10;
+
 /*
  *=========
  * Routers
@@ -70,20 +72,51 @@ exports.shopAuthCheck = async (req, res, next) => {
   return next();
 };
 
+exports.getOwnerMemberList = async (req, res, next) => {
+  const page = req.params.page;
+  const id = req.info._id;
+
+  const owner = await Owner.findAll({
+    include: [{ model: Shop }],
+    offset: (page - 1) * ShowCount,
+    limit: ShowCount
+  });
+
+  const count = await Owner.count({});
+
+  return res.json({ success: 0, count: count, displayCount: ShowCount, lists: owner });
+};
+
+exports.allowOwner = async (req, res, next) => {
+  const id = req.params.id;
+
+  return Owner.update({ BLOCK: false }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.blockOwner = async (req, res, next) => {
+  const id = req.params.id;
+
+  return Owner.update({ BLOCK: true }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
 /*
  *=========
  * Methods
  *=========
  */
 exports.checkId = async id => {
-  const exist = await Owner.findOne({ where: { ID: id } }).catch(err => {
+  const exist = await Owner.findOne({ where: { ID: id, BLOCK: false } }).catch(err => {
     console.log(err);
   });
   return exist ? true : false;
 };
 
 exports.checkEmail = async email => {
-  const exist = await Owner.findOne({ where: { EMAIL: email } }).catch(err => {
+  const exist = await Owner.findOne({ where: { EMAIL: email, BLOCK: false } }).catch(err => {
     console.log(err);
   });
   return exist ? true : false;

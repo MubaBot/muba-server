@@ -14,7 +14,7 @@ module.exports = function(sequelize, DataTypes) {
       VISIT: { type: DataTypes.BOOLEAN },
 
       ADMISSION: { type: DataTypes.INTEGER.UNSIGNED },
-      ADMISSIONMESSAGE: { type: DataTypes.STRING }
+      ADMISSIONID: { type: DataTypes.INTEGER.UNSIGNED }
     },
     {
       timestamps: true,
@@ -41,6 +41,16 @@ module.exports = function(sequelize, DataTypes) {
       foreignKey: {
         name: "USERID",
         allowNull: false
+      },
+      targetKey: "_id"
+    });
+
+    order.belongsTo(models.order_refuse_message, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "ADMISSIONID",
+        allowNull: true
       },
       targetKey: "_id"
     });

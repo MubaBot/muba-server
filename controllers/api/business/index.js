@@ -11,7 +11,40 @@ const Shop = require("@models").shop;
 const ShopMenu = require("@models").shop_menu;
 const ShopAddress = require("@models").shop_address;
 
+const Op = require("sequelize").Op;
+const Fn = require("sequelize").fn;
+const Col = require("sequelize").col;
+
 const ShowCount = 10;
+
+exports.searchBusinessShops = async (req, res, next) => {
+  const keyword = req.params.keyword;
+  const page = req.params.page;
+
+  const shops = await Shop.findAll({
+    include: [
+      {
+        model: ShopAddress,
+        attributes: ["_id", "ADDRESS", "ADDRESSDETAIL", "ADDRLAT", "ADDRLNG"]
+      },
+      {
+        model: ShopMenu,
+        attributes: ["_id"],
+        where: {
+          "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` }
+        }
+      }
+    ],
+    offset: (page - 1) * ShowCount,
+    limit: ShowCount,
+    order: [[Fn("isnull", Col("OWNERID")), "DESC"]]
+  }).catch(err => {
+    console.log(err);
+    return [];
+  });
+
+  return res.json({ success: 0, lists: shops });
+};
 
 exports.getShopList = async (req, res, next) => {
   const id = req.info._id;

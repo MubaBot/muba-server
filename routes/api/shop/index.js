@@ -47,14 +47,17 @@ router.delete("/:id/option/:option", Auth.Owner.requireOwner, Auth.Owner.shopAut
 /**
  * Order
  */
+router.get("/:id/order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getRefuseMessage);
 router.get("/:id/order/push", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getPushItemForShop);
-router.get("/:id/order/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwner);
+router.get("/:id/order/:page([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwner);
 router.get("/:id/order/:order/info", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderItemInfo);
-router.get("/:id/order/admission/:page", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
+router.get("/:id/order/admission/:page([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
 
 router.put("/:id/order/:order/allow", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.allowOrder);
-router.put("/:id/order/:order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
+router.put("/:id/order/:order/refuse/:admission([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
+router.put("/:id/order/refuse/:refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.modifyOrderRefuseMessage);
 
+router.post("/:id/order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.addRefuseMessage);
 router.post("/:id/order", Auth.requireUser, Shop.doOrder);
 
 module.exports = router;

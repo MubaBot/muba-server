@@ -1,4 +1,4 @@
-const request = require("@controllers/request");
+const request = require("./request");
 
 exports.getSearchConfigList = async (req, res) => {
   return request({

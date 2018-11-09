@@ -65,7 +65,8 @@ exports.getShopInfo = async (req, res, next) => {
     order: [[ShopMenu, "_id", "ASC"], [ShopMenu, Sale, "PRICE", "ASC"], [ShopMenu, ShopMenuOptions, ShopOptions, "OPTIONNAME", "ASC"]]
   });
 
-  return res.json({ success: 0, shop: shop });
+  if (shop) return res.json({ success: 0, shop: shop });
+  return res.status(404).json({ success: -1 });
 };
 
 exports.getShopSaleInfo = async (req, res, next) => {
@@ -158,7 +159,7 @@ exports.searchShops = async (req, res, next) => {
   	`shop_menu` AS `shop_menus`\
       ON `shop`.`_id` = `shop_menus`.`SHOPID` AND (`shop_menus`.`MENUNAME` LIKE (:keyword) OR `shop`.`SHOPNAME` LIKE (:keyword)) \
   GROUP BY `shop`.`_id`, `shop`.`OWNERID`, `shop`.`OPEN`, `shop`.`DELIVERY`, `shop`.`SHOPNAME`, `shop`.`PHONE`, `shop`.`HOMEPAGE`, `shop`.`createdAt`, `shop`.`updatedAt`, `shop_address._id`, `ADDRESS`,`ADDRESSDETAIL`,`ADDRLAT`,`ADDRLNG`,`distance` \
-  ORDER BY (`shop`.`OWNERID` IS NOT NULL) DESC, `distance` ASC;",
+  ORDER BY (`shop`.`OWNERID` IS NOT NULL) DESC, (`shop`.`OPEN` IS NOT NULL) DESC, `distance` ASC;",
       { replacements: { lat: lat, lng: lng, keyword: keyword, offset: (page - 1) * SearchCount, limit: SearchCount }, type: models.sequelize.QueryTypes.SELECT }
     )
     .catch(err => {
@@ -383,6 +384,29 @@ exports.createShops = async (req, res, next) => {
   return res.json({ success: 0 });
 };
 
+exports.registerBusinessShop = async (req, res, next) => {
+  const name = req.body.name;
+  const address = req.body.address;
+  const detail = req.body.detail;
+  const lat = req.body.lat;
+  const lng = req.body.lng;
+  const phone = req.body.phone;
+  const homepage = req.body.homepage;
+
+  models.sequelize.transaction(async t => {
+    try {
+      const s = await Shop.create({ OWNERID: null, SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage }, { transaction: t });
+      await ShopAddress.create({ SHOPID: s._id, ADDRESS: address, ADDRESSDETAIL: detail, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true }, { transaction: t });
+
+      return res.json({ success: 0, id: s._id });
+    } catch (exception) {
+      console.log(exception);
+      t.rollback();
+      return res.status(500).json({ success: -1 });
+    }
+  });
+};
+
 const getShopMenuWithSaleWithTransaction = async (id, transaction) => {
   const nowDate = parseInt(moment().format("YYYYMMDD"));
   const nowTime = parseInt(moment().format("HHmm"));
@@ -466,7 +490,7 @@ const addOrderMenuWithTransaction = async (order, menu, sale, count, price, opti
 };
 
 const updateUserAddress = async (user, address, address_detail, lat, lng, transaction) => {
-  const exist = await UserAddress.findOne({ where: { USERID: user, ADDRESS1: address, ADDRESS2: address_detail } });
+  const exist = await UserAddress.findOne({ where: { USERID: user, ADDRESS1: address, ADDRESS2: address_detail }, transaction: transaction });
 
   if (exist) return UserAddress.update({}, { where: { _id: exist._id }, transaction: transaction });
   return UserAddress.create({ USERID: user, ADDRESS1: address, ADDRESS2: address_detail, LAT: lat, LNG: lng }, { transaction: transaction });
@@ -487,23 +511,22 @@ exports.doOrder = async (req, res, next) => {
   return models.sequelize.transaction(async t => {
     try {
       const order = await Order.create({ SHOPID: shop, USERID: user, ADDRESS: address, REQUIRE: require, PHONE: phone, VISIT: visit }, { transaction: t });
-      console.log(order);
 
-      var sum = 0;
+      var price = 0;
       for (var i in cart) {
         const item = cart[i];
 
         const sales = await getShopMenuWithSaleWithTransaction(item.item, t);
 
-        sum += await addOrderMenuBySaleWithTransaction(order._id, item.item, item.count, sales, item.options, t);
+        price += await addOrderMenuBySaleWithTransaction(order._id, item.item, item.count, sales, item.options, t);
       }
 
       if (!visit) await updateUserAddress(user, address, address_detail, lat, lng, t);
 
-      await await Order.update({ PRICE: sum, ADMISSION: null }, { where: { _id: order._id }, transaction: t });
+      await await Order.update({ PRICE: price, ADMISSION: null }, { where: { _id: order._id }, transaction: t });
       await OrderPush.create({ ORDERID: order._id, SHOPID: shop }, { transaction: t });
 
-      return res.json({ success: 0, price: sum });
+      return res.json({ success: 0, price: price });
     } catch (exception) {
       console.log(exception);
       t.rollback();

@@ -10,7 +10,7 @@ module.exports = function(sequelize, DataTypes) {
       LNG: { type: DataTypes.DOUBLE }
     },
     {
-      timestamps: false,
+      timestamps: true,
       tableName: "user_address",
       charset: "utf8",
       collate: "utf8_unicode_ci"
