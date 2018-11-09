@@ -62,7 +62,17 @@ exports.getOrderListForOwner = async (req, res, next) => {
   const page = req.params.page;
   const id = req.info._id;
 
-  const requests = await getOrderItems(id, page, { where: { SHOPID: shop } });
+  const requests = await getOrderItems(id, page, {
+    where: {
+      SHOPID: shop,
+      createdAt: {
+        [Op.lte]: moment
+          .utc()
+          .subtract(10, "seconds")
+          .toDate()
+      }
+    }
+  });
 
   const count = await Order.count({
     include: [{ model: Shop, where: { OWNERID: id } }]
