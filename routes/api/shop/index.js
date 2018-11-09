@@ -11,8 +11,8 @@ const Files = require("@controllers/files");
  */
 router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
 router.get("/:id", Shop.getShopInfo);
-router.get("/list/:page([0-9]*)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
-router.get("/list/sale/:page([0-9]*)/:lat/:lng/:time([0-9]*)", Auth.isLogin, Shop.Sale.searchSaleShops);
+router.get("/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
+router.get("/list/sale/:page(\\d+)/:lat/:lng/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
 
 router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 
@@ -49,12 +49,12 @@ router.delete("/:id/option/:option", Auth.Owner.requireOwner, Auth.Owner.shopAut
  */
 router.get("/:id/order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getRefuseMessage);
 router.get("/:id/order/push", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getPushItemForShop);
-router.get("/:id/order/:page([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwner);
+router.get("/:id/order/:page(\\d+)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwner);
 router.get("/:id/order/:order/info", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderItemInfo);
-router.get("/:id/order/admission/:page([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
+router.get("/:id/order/admission/:page(\\d+)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.getOrderListForOwnerByAdmission);
 
 router.put("/:id/order/:order/allow", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.allowOrder);
-router.put("/:id/order/:order/refuse/:admission([0-9]*)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
+router.put("/:id/order/:order/refuse/:admission(\\d+)", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.refuseOrder);
 router.put("/:id/order/refuse/:refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.modifyOrderRefuseMessage);
 
 router.post("/:id/order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.addRefuseMessage);

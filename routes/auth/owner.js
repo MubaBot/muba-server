@@ -5,7 +5,7 @@ const router = express.Router();
 const Owner = require("@controllers/auth/owner");
 const Admin = require("@controllers/auth/admin");
 
-router.get("/:page([0-9]*)", Admin.requireAdmin, Owner.getOwnerMemberList);
+router.get("/:page(\\d+)", Admin.requireAdmin, Owner.getOwnerMemberList);
 
 // TODO: register #3
 router.post("/", Owner.register);

@@ -8,7 +8,7 @@ const Files = require("@controllers/files");
 
 router.get("/", Auth.Owner.requireOwner, Business.getShopList);
 router.get("/request/:page", Auth.Admin.requireAdmin, Business.getRegisterBusiness);
-router.get("/shop/:page([0-9]*)/:keyword(*)", Auth.Owner.requireOwner, Business.searchBusinessShops);
+router.get("/shop/:page(\\d+)/:keyword(*)", Auth.Owner.requireOwner, Business.searchBusinessShops);
 
 router.post("/", Auth.Owner.requireOwner, Business.registerBusiness);
 router.post("/shop", Auth.Owner.requireOwner, Shop.registerBusinessShop);
