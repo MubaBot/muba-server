@@ -21,6 +21,8 @@ exports.requestShopService = async (req, res, next) => {
   const day = req.body.day;
   const account = req.body.account;
 
+  if (day < 30) return res.status(412).json({ success: -1 });
+
   return ShopServiceRequest.create({ SHOPID: id, USERNAME: name, ACCOUNT: account, DAY: day, PRICE: day * ServicePrice })
     .then(() => res.json({ success: 0 }))
     .catch(err => res.status(500).json({ success: -1 }));

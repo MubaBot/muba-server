@@ -128,12 +128,7 @@ exports.getRegisterBusiness = async (req, res, next) => {
   const page = req.params.page;
 
   const requests = await BusinessCertificationRequest.findAll({
-    include: [
-      {
-        model: Shop,
-        attributes: ["SHOPNAME"]
-      }
-    ],
+    include: [{ model: Shop }],
     offset: (page - 1) * ShowCount,
     limit: ShowCount
   });
@@ -147,12 +142,7 @@ exports.getRegisterBusinessLog = async (req, res, next) => {
   const page = req.params.page;
 
   const requests = await BusinessCertificationRequestLog.findAll({
-    include: [
-      {
-        model: Shop,
-        attributes: ["SHOPNAME"]
-      }
-    ],
+    include: [{ model: Shop }],
     offset: (page - 1) * ShowCount,
     limit: ShowCount
   });
