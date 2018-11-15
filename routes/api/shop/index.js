@@ -9,7 +9,7 @@ const Files = require("@controllers/files");
 /**
  * Info
  */
-// router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
+router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
 router.get("/:id/menus/sales", Shop.getShopMenusWithSale);
 router.get("/:id", Shop.getShopInfo);
 router.get("/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
