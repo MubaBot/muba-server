@@ -110,9 +110,9 @@ exports.getShopOptionInfo = async (req, res, next) => {
   return res.json({ success: 0, name: menu.MENUNAME, list: options });
 };
 
-// exports.getShopOwnerCount = async (req, res, next) => {
-//   return res.json({ success: 0 });
-// };
+exports.getShopOwnerCount = async (req, res, next) => {
+  return res.json({ success: 0 });
+};
 
 exports.getShopMenusWithSale = async (req, res, next) => {
   const nowDate = parseInt(moment().format("YYYYMMDD"));

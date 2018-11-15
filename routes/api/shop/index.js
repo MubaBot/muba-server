@@ -9,9 +9,9 @@ const Files = require("@controllers/files");
 /**
  * Info
  */
-router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
-router.get("/:id/menus/sales", Shop.getShopMenusWithSale);
-router.get("/:id", Shop.getShopInfo);
+router.get("/:id(\\d+)/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
+router.get("/:id(\\d+)/menus/sales", Shop.getShopMenusWithSale);
+router.get("/:id(\\d+)", Shop.getShopInfo);
 router.get("/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
 router.get("/list/sale/:page(\\d+)/:lat/:lng/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
 
