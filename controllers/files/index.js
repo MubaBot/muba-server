@@ -5,6 +5,7 @@ const SHA = require("js-sha512").sha512_224;
 const TempDirectory = [process.env.PWD, "uploads/temp/"].join("/");
 const BusinessDirectory = [process.env.PWD, "uploads/business/"].join("/");
 const ShopMenuDirectory = [process.env.PWD, "uploads/menu/"].join("/");
+const ReviewDirectory = [process.env.PWD, "uploads/review/"].join("/");
 
 exports.uploadPhoto = multer({ dest: TempDirectory, limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -19,6 +20,10 @@ exports.saveFileFromTempAsRandomName = async (name, ext, type) => {
     case "ShopMenu":
       TypeDirectory = ShopMenuDirectory;
       break;
+    case "Review":
+      TypeDirectory = ReviewDirectory;
+      break;
+
     default:
       return false;
   }
@@ -47,4 +52,8 @@ exports.resetShopMenuFile = async (name, old) => {
 
 exports.removeShopMenuFile = async name => {
   return fs.unlink(ShopMenuDirectory + name);
+};
+
+exports.removeReviewFile = async name => {
+  return fs.unlink(ReviewDirectory + name);
 };

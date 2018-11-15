@@ -10,7 +10,7 @@ const ShowCount = 10;
 /*
  *=========
  * Routers
- *========= 
+ *=========
  */
 
 /**
@@ -87,6 +87,20 @@ exports.requireAdmin = async (req, res, next) => {
   return next();
 };
 
+exports.requireAdminForRegister = async (req, res, next) => {
+  const exist = await Admin.count({});
+  if (exist === 0) return next();
+
+  const decode = jwt.getDecodeData(req);
+
+  if (decode && decode.type === "ADMIN") {
+    req.info = decode;
+    req.isAdmin = true;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
+};
+
 exports.allowAdmin = async (req, res, next) => {
   const id = req.params.id;
 
@@ -101,6 +115,18 @@ exports.blockAdmin = async (req, res, next) => {
   return Admin.update({ BLOCK: true }, { where: { _id: id } })
     .then(() => res.json({ success: 0 }))
     .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.isAdminByToken = async (req, res, next) => {
+  req.headers["x-access-token"] = req.params.token;
+  const decode = jwt.getDecodeData(req);
+
+  if (decode && decode.type === "ADMIN") {
+    req.info = decode;
+    req.isAdmin = true;
+  } else return res.status(401).send("Unauthorized");
+
+  return next();
 };
 
 /*
@@ -130,6 +156,7 @@ exports.getUser = async (mode, id) => {
 
   return {
     type: "ADMIN",
+    _id: admin._id,
     id: admin.ID,
     username: admin.USERNAME,
     email: admin.EMAIL

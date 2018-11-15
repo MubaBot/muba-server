@@ -7,8 +7,8 @@ module.exports = function(sequelize, DataTypes) {
         type: DataTypes.INTEGER.UNSIGNED,
         notNull: true,
         references: {
-          model: "shop_address",
-          key: "SHOPID"
+          model: "shop",
+          key: "_id"
         }
       },
       USERID: {

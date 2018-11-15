@@ -5,11 +5,15 @@ const models = require("@models");
 const Sale = require("@models").sale;
 const Shop = require("@models").shop;
 const ShopMenu = require("@models").shop_menu;
-const ShopAddress = require("@models").shop_address;
 const ShopOptions = require("@models").shop_options;
 const ShopCrawler = require("@models").shop_crawler;
 const ShopTempLatlng = require("@models").shop_temp_latlng;
 const ShopMenuOptions = require("@models").shop_menu_options;
+
+const User = require("@models").user;
+
+const Review = require("@models").review;
+const ReviewPhoto = require("@models").review_photo;
 
 const Order = require("@models").order;
 const OrderPush = require("@models").order_push;
@@ -27,9 +31,11 @@ const Literal = require("sequelize").literal;
 const QueryTypes = require("sequelize").QueryTypes;
 
 const SearchCount = 10;
-const LatLngUpdateCount = 1;
+const LatLngUpdateCount = 100;
 
 exports.Sale = { ...require("./sale") };
+exports.Service = { ...require("./service") };
+exports.Review = { ...require("./review") };
 
 exports.getShopInfo = async (req, res, next) => {
   const nowDate = parseInt(moment().format("YYYYMMDD"));
@@ -38,7 +44,6 @@ exports.getShopInfo = async (req, res, next) => {
   const id = req.params.id;
   const shop = await Shop.findOne({
     include: [
-      { model: ShopAddress },
       {
         model: ShopMenu,
         include: [
@@ -59,7 +64,8 @@ exports.getShopInfo = async (req, res, next) => {
             include: [{ model: ShopOptions }]
           }
         ]
-      }
+      },
+      { model: Review, attributes: ["_id"], required: false }
     ],
     where: { _id: id },
     order: [[ShopMenu, "_id", "ASC"], [ShopMenu, Sale, "PRICE", "ASC"], [ShopMenu, ShopMenuOptions, ShopOptions, "OPTIONNAME", "ASC"]]
@@ -104,68 +110,75 @@ exports.getShopOptionInfo = async (req, res, next) => {
   return res.json({ success: 0, name: menu.MENUNAME, list: options });
 };
 
-exports.getShopOwnerCount = async (req, res, next) => {
-  return res.json({ success: 0 });
+// exports.getShopOwnerCount = async (req, res, next) => {
+//   return res.json({ success: 0 });
+// };
+
+exports.getShopMenusWithSale = async (req, res, next) => {
+  const nowDate = parseInt(moment().format("YYYYMMDD"));
+  const nowTime = parseInt(moment().format("HHmm"));
+
+  const id = req.params.id;
+  const shop = await Shop.findOne({
+    attributes: [],
+    include: [
+      {
+        model: ShopMenu,
+        include: [
+          {
+            model: Sale,
+            where: {
+              [Op.and]: [
+                { [Op.or]: [{ USEDATE: false }, { [Op.and]: [{ STARTDAY: { [Op.lte]: nowDate } }, { ENDDAY: { [Op.gte]: nowDate } }] }] },
+                { [Op.or]: [{ USETIME: false }, { [Op.and]: [{ STARTTIME: { [Op.lte]: nowTime } }, { ENDTIME: { [Op.gte]: nowTime } }] }] },
+                { [Op.or]: [{ LIMIT: -1 }, { COUNT: { [Op.gt]: 0 } }] }
+              ]
+            },
+            required: false
+          }
+        ]
+      }
+    ],
+    where: { _id: id },
+    order: [[ShopMenu, "_id", "ASC"], [ShopMenu, Sale, "PRICE", "ASC"]]
+  });
+
+  if (shop) return res.json({ success: 0, shop: shop });
+  return res.status(404).json({ success: -1 });
 };
 
 exports.searchShops = async (req, res, next) => {
-  // const keyword = req.params.keyword;
-  const keyword = ["%", req.params.keyword, "%"].join("");
+  const keyword = req.params.keyword;
   const page = req.params.page;
   const lat = req.params.lat;
   const lng = req.params.lng;
-  // const keywords = keyword.split(" ").map((v, i) => `%${v}%`);
 
-  // const shops = await Shop.findAll({
-  //   include: [
-  //     {
-  //       model: ShopAddress,
-  //       attributes: ["_id", "ADDRESS", "ADDRESSDETAIL", "ADDRLAT", "ADDRLNG"]
-  //     },
-  //     {
-  //       model: ShopMenu,
-  //       attributes: ["_id"],
-  //       where: {
-  //         // [Op.or]: [{ MENUNAME: { [Op.iLike]: { [Op.any]: keywords } } }, { "$shop.SHOPNAME$": { [Op.in]: { [Op.like]: keywords } } }]
-  //         [Op.or]: [{ MENUNAME: { [Op.like]: `%${keyword}%` } }, { "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` } }]
-  //       }
-  //     }
-  //   ],
-  //   offset: (page - 1) * SearchCount,
-  //   limit: SearchCount,
-  //   order: [[Literal(`(pow((ADDRLAT-${lat}), 2) + pow((ADDRLNG-${lng}), 2))`), "ASC"]]
-  // }).catch(err => {
-  //   console.log(err);
-  //   return [];
-  // });
-
-  const shops = await models.sequelize
-    .query(
-      "SELECT `shop`.*, `shop_address`.`_id` AS `shop_address._id`, `shop_address`.`ADDRESS` AS `ADDRESS`, `shop_address`.`ADDRESSDETAIL` AS `ADDRESSDETAIL`, `shop_address`.`ADDRLAT` AS `ADDRLAT`, `shop_address`.`ADDRLNG` AS `ADDRLNG`, (pow((ADDRLAT - :lat), 2) + pow((ADDRLNG - :lng), 2)) AS `distance` \
-  FROM ( \
-  	SELECT `shop`.`_id`, `shop`.`OWNERID`, `shop`.`OPEN`, `shop`.`DELIVERY`, `shop`.`SHOPNAME`, `shop`.`PHONE`, `shop`.`HOMEPAGE`, `shop`.`createdAt`, `shop`.`updatedAt` \
-  	FROM  `shop` AS `shop` \
-  	WHERE ( \
-      SELECT `SHOPID` FROM `shop_menu` AS `shop_menus` \
-      WHERE ((`shop_menus`.`MENUNAME` LIKE (:keyword) OR `shop`.`SHOPNAME` LIKE (:keyword)) AND `shop_menus`.`SHOPID` = `shop`.`_id`) LIMIT 1 \
-    ) \
-      IS NOT NULL\
-      LIMIT :offset, :limit\
-  ) AS `shop`  \
-  LEFT OUTER JOIN \
-  	`shop_address` AS `shop_address`\
-      ON `shop`.`_id` = `shop_address`.`SHOPID`\
-  INNER JOIN \
-  	`shop_menu` AS `shop_menus`\
-      ON `shop`.`_id` = `shop_menus`.`SHOPID` AND (`shop_menus`.`MENUNAME` LIKE (:keyword) OR `shop`.`SHOPNAME` LIKE (:keyword)) \
-  GROUP BY `shop`.`_id`, `shop`.`OWNERID`, `shop`.`OPEN`, `shop`.`DELIVERY`, `shop`.`SHOPNAME`, `shop`.`PHONE`, `shop`.`HOMEPAGE`, `shop`.`createdAt`, `shop`.`updatedAt`, `shop_address._id`, `ADDRESS`,`ADDRESSDETAIL`,`ADDRLAT`,`ADDRLNG`,`distance` \
-  ORDER BY (`shop`.`OWNERID` IS NOT NULL) DESC, (`shop`.`OPEN` IS NOT NULL) DESC, `distance` ASC;",
-      { replacements: { lat: lat, lng: lng, keyword: keyword, offset: (page - 1) * SearchCount, limit: SearchCount }, type: models.sequelize.QueryTypes.SELECT }
-    )
-    .catch(err => {
-      console.log(err);
-      return [];
-    });
+  const shops = await Shop.findAll({
+    attributes: [
+      "_id",
+      "SHOPNAME",
+      "ENDDATE",
+      "OPEN",
+      "PHONE",
+      "POINT",
+      [Literal(`(pow((\`ADDRLAT\` - ${lat}), 2) + pow((\`ADDRLNG\` - ${lng}), 2))`), "distance"]
+    ],
+    include: [
+      {
+        model: ShopMenu,
+        where: {
+          [Op.or]: [{ MENUNAME: { [Op.like]: `%${keyword}%` } }, { "$shop.SHOPNAME$": { [Op.like]: `%${keyword}%` } }]
+        }
+      },
+      { model: Review, attributes: ["_id"], required: false }
+    ],
+    offset: (page - 1) * SearchCount,
+    limit: SearchCount,
+    order: [Literal(`\`ENDDATE\` >= '${moment().format("YYYY-MM-DD")}' DESC`), ["OPEN", "DESC"], Literal("distance ASC")]
+  }).catch(err => {
+    console.log(err);
+    return [];
+  });
 
   return res.json({ success: 0, lists: shops });
 };
@@ -176,6 +189,8 @@ exports.addShopMenu = async (req, res, next) => {
   const price = req.body.price;
   const sold = req.body.sold;
   const rep = req.body.rep;
+
+  if (!name) return res.status(412).json({ success: -2 });
 
   const exist = await ShopMenu.findOne({ where: { SHOPID: id, MENUNAME: name } });
   if (exist) return res.status(409).json({ success: -1 });
@@ -194,8 +209,6 @@ exports.addShopMenuSale = async (req, res, next) => {
 
   const menu = ShopMenu.findOne({ where: { _id: params.menu, SHOPID: params.id } });
   if (!menu) return res.status(404).json({ success: 1 });
-
-  // todo: 겹치는 시간 체크
 
   return Sale.create({
     SHOPID: params.id,
@@ -240,8 +253,6 @@ exports.modifyShopMenuSale = async (req, res, next) => {
 
   const sale = Sale.findOne({ where: { _id: params.sale, SHOPID: params.id, MENUID: params.menu } });
   if (!sale) return res.status(404).json({ success: 1 });
-
-  // todo: 겹치는 시간 체크
 
   return Sale.update(
     {
@@ -357,8 +368,7 @@ const insertShop = shop => {
     try {
       const ADDRESS = [shop.place.state, shop.place.city, shop.place.address1].join(" ");
       const ADDRESS_DETAIL = shop.place.options;
-      const s = await Shop.create({ OWNERID: null, SHOPNAME: shop.name, PHONE: shop.tel }, { transaction: t });
-      await ShopAddress.create({ SHOPID: s._id, ADDRESS: ADDRESS, ADDRESSDETAIL: ADDRESS_DETAIL }, { transaction: t });
+      const s = await Shop.create({ OWNERID: null, SHOPNAME: shop.name, PHONE: shop.tel, ADDRESS: ADDRESS, ADDRESSDETAIL: ADDRESS_DETAIL }, { transaction: t });
       await ShopCrawler.create({ SHOPID: s._id, SEARCHURL: shop.url }, { transaction: t });
 
       for (var i in shop.menus) await ShopMenu.create({ SHOPID: s._id, MENUNAME: shop.menus[i].name, PRICE: shop.menus[i].price }, { transaction: t });
@@ -395,8 +405,10 @@ exports.registerBusinessShop = async (req, res, next) => {
 
   models.sequelize.transaction(async t => {
     try {
-      const s = await Shop.create({ OWNERID: null, SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage }, { transaction: t });
-      await ShopAddress.create({ SHOPID: s._id, ADDRESS: address, ADDRESSDETAIL: detail, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true }, { transaction: t });
+      const s = await Shop.create(
+        { OWNERID: null, SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, ADDRESS: address, ADDRESSDETAIL: detail, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true },
+        { transaction: t }
+      );
 
       return res.json({ success: 0, id: s._id });
     } catch (exception) {
@@ -510,7 +522,10 @@ exports.doOrder = async (req, res, next) => {
 
   return models.sequelize.transaction(async t => {
     try {
-      const order = await Order.create({ SHOPID: shop, USERID: user, ADDRESS: address, REQUIRE: require, PHONE: phone, VISIT: visit }, { transaction: t });
+      const order = await Order.create(
+        { SHOPID: shop, USERID: user, ADDRESS: [address, address_detail].join(" "), REQUIRE: require, PHONE: phone, VISIT: visit },
+        { transaction: t }
+      );
 
       var price = 0;
       for (var i in cart) {
@@ -518,6 +533,10 @@ exports.doOrder = async (req, res, next) => {
 
         const sales = await getShopMenuWithSaleWithTransaction(item.item, t);
 
+        if (item.count <= 0) {
+          t.rollback();
+          return res.status(412).json({ success: -1 });
+        }
         price += await addOrderMenuBySaleWithTransaction(order._id, item.item, item.count, sales, item.options, t);
       }
 
@@ -535,36 +554,42 @@ exports.doOrder = async (req, res, next) => {
   });
 };
 
-const shopLatlngUpdateByUser = async (user, shop, lat, lng) => {
-  const s = await ShopAddress.findOne({ where: { SHOPID: shop } });
-  if (!s || s.ADMIN) return false;
+// const shopLatlngUpdateByUser = async (user, shop, lat, lng) => {
+//   const s = await Shop.findOne({ where: { _id: shop } });
+//   if (!s || s.ADMIN) return false;
 
-  const exist = await ShopTempLatlng.findOne({ where: { USERID: user, SHOPID: shop } });
-  if (exist) return false;
+//   const exist = await ShopTempLatlng.findOne({ where: { USERID: user, SHOPID: shop } });
+//   if (exist) return false;
 
-  await ShopTempLatlng.create({
-    SHOPID: shop,
-    USERID: user,
-    ADDRLAT: lat,
-    ADDRLNG: lng
-  });
+//   await ShopTempLatlng.create({
+//     SHOPID: shop,
+//     USERID: user,
+//     ADDRLAT: lat,
+//     ADDRLNG: lng
+//   });
 
-  const count = await ShopTempLatlng.count({ where: { SHOPID: shop, ADDRLAT: lat, ADDRLNG: lng } });
-  if (count >= LatLngUpdateCount) {
-    const s = await ShopAddress.findAll({ where: { SHOPID: shop } });
-    const scount = await ShopTempLatlng.count({ where: { SHOPID: shop, ADDRLAT: s.ADDRLAT, ADDRLNG: s.ADDRLNG } });
+//   const count = await ShopTempLatlng.count({ where: { SHOPID: shop, ADDRLAT: lat, ADDRLNG: lng } });
+//   if (count >= LatLngUpdateCount) {
+//     const s = await ShopAddress.findOne({ where: { SHOPID: shop } });
+//     const scount = await ShopTempLatlng.count({ where: { SHOPID: shop, ADDRLAT: s.ADDRLAT, ADDRLNG: s.ADDRLNG } });
 
-    if (count > scount) ShopAddress.update({ ADDRLAT: lat, ADDRLNG: lng }, { where: { SHOPID: shop } });
-  }
+//     if (count > scount) ShopAddress.update({ ADDRLAT: lat, ADDRLNG: lng }, { where: { SHOPID: shop } });
+//   }
 
-  return true;
-};
+//   return true;
+// };
 
 const shopLatlngUpdateByOwner = async (owner, shop, address, lat, lng) => {
   const s = await Shop.findOne({ where: { OWNERID: owner } });
   if (!s) return false;
 
-  return ShopAddress.update({ ADDRESS: address, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true }, { where: { SHOPID: shop } })
+  return Shop.update({ ADDRESS: address, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true }, { where: { _id: shop } })
+    .then(() => true)
+    .catch(() => false);
+};
+
+const shopLatlngUpdateByAdmin = async (shop, address, lat, lng) => {
+  return Shop.update({ ADDRESS: address, ADDRLAT: lat, ADDRLNG: lng }, { where: { _id: shop } })
     .then(() => true)
     .catch(() => false);
 };
@@ -590,11 +615,15 @@ exports.setLatlng = async (req, res, next) => {
 
   switch (type) {
     case "OWNER":
-      const result = await shopLatlngUpdateByOwner(user, shop, req.body.address, lat, lng);
+      var result = await shopLatlngUpdateByOwner(user, shop, req.body.address, lat, lng);
       if (!result) return res.status(409).json({ success: -2 });
       break;
     case "USER":
-      await shopLatlngUpdateByUser(user, shop, lat, lng);
+      // await shopLatlngUpdateByUser(user, shop, lat, lng);
+      break;
+    case "ADMIN":
+      var result = await shopLatlngUpdateByAdmin(shop, req.body.address, lat, lng);
+      if (!result) return res.status(409).json({ success: -2 });
       break;
     default:
       return res.status(409).json({ success: -1 });
@@ -617,8 +646,10 @@ exports.updateShopInfo = async (req, res, next) => {
 
   return models.sequelize.transaction(async t => {
     try {
-      await Shop.update({ SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, OPEN: open, DELIVERY: delivery }, { where: { _id: shop }, transaction: t });
-      await ShopAddress.update({ ADDRESSDETAIL: detail }, { where: { SHOPID: shop }, transaction: t });
+      await Shop.update(
+        { SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, OPEN: open, DELIVERY: delivery, ADDRESSDETAIL: detail },
+        { where: { _id: shop }, transaction: t }
+      );
 
       return res.json({ success: 0 });
     } catch (exception) {

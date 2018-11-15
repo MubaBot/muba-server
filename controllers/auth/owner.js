@@ -1,17 +1,19 @@
-const Op = require("sequelize").Op;
 const sha512 = require("js-sha512");
+const moment = require("moment");
 
 const jwt = require("./jwt");
 
 const Owner = require("@models").owner;
 const Shop = require("@models").shop;
 
+const Op = require("sequelize").Op;
+
 const ShowCount = 10;
 
 /*
  *=========
  * Routers
- *========= 
+ *=========
  */
 
 /**
@@ -66,6 +68,17 @@ exports.shopAuthCheck = async (req, res, next) => {
   const id = req.params.id || req.body.id;
   const user = req.info._id;
 
+  // with payment service
+  const exist = await Shop.findOne({ where: { _id: id, OWNERID: user, ENDDATE: { [Op.gte]: moment.utc().toDate() } } });
+  if (!exist) return res.status(403).send("Permission denied");
+
+  return next();
+};
+
+exports.shopAuthCheckWithoutService = async (req, res, next) => {
+  const id = req.params.id || req.body.id;
+  const user = req.info._id;
+
   const exist = await Shop.count({ where: { _id: id, OWNERID: user } });
   if (!exist) return res.status(403).send("Permission denied");
 
@@ -101,6 +114,30 @@ exports.blockOwner = async (req, res, next) => {
   return Owner.update({ BLOCK: true }, { where: { _id: id } })
     .then(() => res.json({ success: 0 }))
     .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.updateOwnerInfo = async (req, res, next) => {
+  const id = req.info._id;
+  const name = req.body.name;
+  const email = req.body.email;
+  const phone = req.body.phone;
+  const password = req.body.password;
+  const newpassword = req.body.newpassword;
+
+  let updateQuery = { USERNAME: name, EMAIL: email, PHONE: phone };
+
+  if (password !== "") {
+    if (newpassword === "") return res.status(412).json({ success: -1 });
+
+    const exist = await Owner.findOne({ where: { _id: id, PASSWORD: sha512(password) } });
+    if (!exist) return res.status(403).json({ success: -2 });
+
+    updateQuery.PASSWORD = sha512(newpassword);
+  }
+
+  return Owner.update(updateQuery, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: 1 }));
 };
 
 /*

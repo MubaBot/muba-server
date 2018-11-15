@@ -25,6 +25,36 @@ module.exports = function(sequelize, DataTypes) {
   );
 
   order.associate = models => {
+    order.hasMany(models.order_menu, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "ORDERID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
+
+    order.hasMany(models.order_push, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "ORDERID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
+
+    order.hasOne(models.review, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "ORDERID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
+
     order.belongsTo(models.shop, {
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
@@ -53,26 +83,6 @@ module.exports = function(sequelize, DataTypes) {
         allowNull: true
       },
       targetKey: "_id"
-    });
-
-    order.hasMany(models.order_menu, {
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-      foreignKey: {
-        name: "ORDERID",
-        allowNull: false
-      },
-      sourceKey: "_id"
-    });
-
-    order.hasMany(models.order_push, {
-      onUpdate: "CASCADE",
-      onDelete: "CASCADE",
-      foreignKey: {
-        name: "ORDERID",
-        allowNull: false
-      },
-      sourceKey: "_id"
     });
   };
 

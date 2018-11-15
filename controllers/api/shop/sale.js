@@ -1,7 +1,6 @@
 const Shop = require("@models").shop;
 const Sale = require("@models").sale;
 const ShopMenu = require("@models").shop_menu;
-const ShopAddress = require("@models").shop_address;
 
 const moment = require("moment");
 
@@ -37,7 +36,7 @@ exports.searchSaleShops = async (req, res, next) => {
   );
 
   const sales = await Sale.findAll({
-    include: [{ model: ShopMenu }, { model: Shop, include: [{ model: ShopAddress }] }],
+    include: [{ model: ShopMenu }, { model: Shop }],
     where: {
       [Op.and]: [
         { [Op.or]: [{ USEDATE: false }, { [Op.and]: [{ STARTDAY: { [Op.lte]: nowDate } }, { ENDDAY: { [Op.gte]: endDate } }] }] },

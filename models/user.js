@@ -30,6 +30,16 @@ module.exports = function(sequelize, DataTypes) {
       },
       sourceKey: "_id"
     });
+
+    user.hasMany(models.review, {
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+      foreignKey: {
+        name: "USERID",
+        allowNull: false
+      },
+      sourceKey: "_id"
+    });
   };
 
   return user;

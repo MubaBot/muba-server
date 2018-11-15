@@ -10,6 +10,7 @@ router.get("/:page(\\d+)", Admin.requireAdmin, Owner.getOwnerMemberList);
 // TODO: register #3
 router.post("/", Owner.register);
 
+router.put("/", Owner.requireOwner, Owner.updateOwnerInfo);
 router.put("/:id/allow", Admin.requireAdmin, Owner.allowOwner);
 router.put("/:id/block", Admin.requireAdmin, Owner.blockOwner);
 

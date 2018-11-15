@@ -9,7 +9,8 @@ const Files = require("@controllers/files");
 /**
  * Info
  */
-router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
+// router.get("/:id/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
+router.get("/:id/menus/sales", Shop.getShopMenusWithSale);
 router.get("/:id", Shop.getShopInfo);
 router.get("/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
 router.get("/list/sale/:page(\\d+)/:lat/:lng/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
@@ -59,6 +60,23 @@ router.put("/:id/order/refuse/:refuse", Auth.Owner.requireOwner, Auth.Owner.shop
 
 router.post("/:id/order/refuse", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Order.addRefuseMessage);
 router.post("/:id/order", Auth.requireUser, Shop.doOrder);
+
+/**
+ * Service (Payment)
+ */
+
+router.get("/service/:page(\\d+)", Auth.Admin.requireAdmin, Shop.Service.getRequestList);
+router.get("/service/price", Shop.Service.getServicePrice);
+
+router.post("/:id(\\d+)/service", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheckWithoutService, Shop.Service.requestShopService);
+
+/**
+ * Review
+ */
+
+router.get("/:id/review/:page", Shop.Review.getReviews);
+
+router.post("/:id/order/:order/review", Auth.requireUser, Files.uploadPhoto.array("photo"), Shop.Review.writeReview);
 
 module.exports = router;
 

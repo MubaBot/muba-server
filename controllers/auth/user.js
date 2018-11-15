@@ -3,10 +3,12 @@ const sha512 = require("js-sha512");
 
 const User = require("@models").user;
 
+const ShowCount = 10;
+
 /*
  *=========
  * Routers
- *========= 
+ *=========
  */
 
 /**
@@ -47,20 +49,49 @@ exports.register = async (req, res, next) => {
     .catch(e => res.status(500).send({ success: -7 }));
 };
 
+exports.getUserMemberList = async (req, res, next) => {
+  const page = req.params.page;
+
+  const user = await User.findAll({
+    offset: (page - 1) * ShowCount,
+    limit: ShowCount
+  });
+
+  const count = await User.count({});
+
+  return res.json({ success: 0, count: count, displayCount: ShowCount, lists: user });
+};
+
+exports.allowUser = async (req, res, next) => {
+  const id = req.params.id;
+
+  return User.update({ BLOCK: false }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
+exports.blockUser = async (req, res, next) => {
+  const id = req.params.id;
+
+  return User.update({ BLOCK: true }, { where: { _id: id } })
+    .then(() => res.json({ success: 0 }))
+    .catch(err => res.status(500).json({ success: -1 }));
+};
+
 /*
  *=========
  * Methods
  *=========
  */
 exports.checkId = async id => {
-  const exist = await User.findOne({ where: { ID: id } }).catch(err => {
+  const exist = await User.findOne({ where: { ID: id, BLOCK: false } }).catch(err => {
     console.log(err);
   });
   return exist ? true : false;
 };
 
 exports.checkEmail = async email => {
-  const exist = await User.findOne({ where: { EMAIL: email } }).catch(err => {
+  const exist = await User.findOne({ where: { EMAIL: email, BLOCK: false } }).catch(err => {
     console.log(err);
   });
   return exist ? true : false;

@@ -13,6 +13,8 @@ const ShopMenu = require("@models").shop_menu;
 const ShopOptions = require("@models").shop_options;
 const ShopMenuOptions = require("@models").shop_menu_options;
 
+const Review = require("@models").review;
+
 const moment = require("moment");
 const Op = require("sequelize").Op;
 
@@ -39,7 +41,8 @@ const getOrderItems = async (owner = -1, page, { where }) => {
         { model: ShopMenu, attributes: ["MENUNAME"] }
       ]
     },
-    { model: OrderRefuseMessage, require: false }
+    { model: OrderRefuseMessage, require: false },
+    { model: Review, attributes: ["_id"], require: false }
   ];
 
   if (owner !== -1) include.push({ model: Shop, where: { OWNERID: owner } });
@@ -113,7 +116,7 @@ exports.allowOrder = async (req, res, next) => {
   const owner = req.info._id;
   const id = req.params.order;
 
-  const order = await Order.findOne({ where: { _id: id } });
+  const order = await Order.findOne({ where: { _id: id, ADMISSION: null } });
   const permission = await checkPermissionShop(owner, order.SHOPID);
   if (!permission) return res.status(403).json({ success: 1 });
 
@@ -127,7 +130,7 @@ exports.refuseOrder = async (req, res, next) => {
   const id = req.params.order;
   const admission = req.params.admission;
 
-  const orders = await getOrderItems(owner, 1, { where: { _id: id } });
+  const orders = await getOrderItems(owner, 1, { where: { _id: id, ADMISSION: null } });
   if (orders.length === 0) return res.status(403).json({ success: 1 });
 
   const permission = await checkPermissionShop(owner, orders[0].SHOPID);
@@ -213,7 +216,7 @@ exports.cancelOrder = async (req, res, next) => {
   const user = req.info._id;
   const id = req.params.order;
 
-  const orders = await getOrderItems(-1, 1, { where: { _id: id } });
+  const orders = await getOrderItems(-1, 1, { where: { _id: id, ADMISSION: null } });
   if (orders.length === 0) return res.status(403).json({ success: 1 });
 
   return models.sequelize.transaction(async t => {
