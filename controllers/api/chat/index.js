@@ -40,21 +40,58 @@ exports.updateChatbotData = async (req, res, next) => {
   try {
     for (var i in shops) {
       const shop = shops[i];
-
-      let menus = [];
-      for (var j in shop.shop_menus) menus.push(shop.shop_menus[j].MENUNAME);
-
-      await request({
-        method: "POST",
-        url: "/chatbot/db_manage/add_restaurant",
-        formData: { restaurant_name: shop.SHOPNAME, menu: JSON.stringify(menus) },
-        then: result => true,
-        error: err => Promise.reject(false)
-      });
+      await insertChatbotShopInfo(shop._id, shop.SHOPNAME, shop.shop_menus);
     }
 
     return res.json({ success: 0 });
   } catch (err) {
     return res.status(500).json({ success: -2 });
   }
+};
+
+/**
+ * Methods
+ */
+
+const insertChatbotShopInfo = (exports.insertChatbotShopInfo = async (ID, SHOPNAME, MENU) => {
+  let menus = [];
+  for (var i in MENU) {
+    const menu = MENU[i];
+    if (menu.MENUNAME) menus.push(menu.MENUNAME);
+    else menus.push(menu);
+  }
+
+  return request({
+    method: "POST",
+    url: "/chatbot/db_manage/add_restaurant",
+    formData: { shop_id: ID, restaurant_name: SHOPNAME, menu: JSON.stringify(menus) },
+    then: () => true,
+    error: err => Promise.reject(err)
+  });
+});
+
+exports.updateChatbotShopInfo = async (ID, SHOPNAME, MENU) => {
+  let menus = [];
+  for (var i in MENU) {
+    const menu = MENU[i];
+    if (menu.MENUNAME) menus.push(menu.MENUNAME);
+    else menus.push(menu);
+  }
+
+  return request({
+    method: "PUT",
+    url: "/chatbot/db_manage/change_restaurant_name",
+    formData: { shop_id: ID, restaurant_name: SHOPNAME, menu: JSON.stringify(menus) },
+    then: () => true,
+    error: err => Promise.reject(err)
+  });
+};
+
+exports.deleteChatbotShop = async ID => {
+  return request({
+    method: "GET",
+    url: "/chatbot/db_manage/item_delete?table=restaurant&id=" + ID,
+    then: () => true,
+    error: err => Promise.reject(JSON.stringify(err))
+  });
 };

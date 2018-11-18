@@ -2,6 +2,7 @@ const path = require("path");
 const moment = require("moment");
 
 const ShopApi = require("@api/shop");
+const Chat = require("@api/chat");
 const Files = require("@controllers/files");
 
 const models = require("@models");
@@ -221,7 +222,16 @@ exports.admissionBusiness = async (req, res, next) => {
 exports.deleteShopByAdmin = async (req, res, next) => {
   const id = req.params.id;
 
-  return Shop.destroy({ where: { _id: id } })
-    .then(() => res.json({ success: 0 }))
-    .catch(err => res.status(500).json({ success: -1 }));
+  return models.sequelize.transaction(async t => {
+    try {
+      await Shop.destroy({ where: { _id: id }, transaction: t });
+      await Chat.deleteChatbotShop(id);
+
+      return res.json({ success: 0 });
+    } catch (exception) {
+      console.log(exception);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
 };

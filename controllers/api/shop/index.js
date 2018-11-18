@@ -1,5 +1,6 @@
 const path = require("path");
 const Files = require("@controllers/files");
+const Chat = require("@api/chat");
 
 const models = require("@models");
 const Sale = require("@models").sale;
@@ -195,9 +196,21 @@ exports.addShopMenu = async (req, res, next) => {
   const exist = await ShopMenu.findOne({ where: { SHOPID: id, MENUNAME: name } });
   if (exist) return res.status(409).json({ success: -1 });
 
-  return ShopMenu.create({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep })
-    .then(() => res.json({ success: 0 }))
-    .catch(() => res.status(500).json({ success: 1 }));
+  return models.sequelize.transaction(async t => {
+    try {
+      const shop = await Shop.findOne({ where: { _id: id }, transaction: t });
+      await ShopMenu.create({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep }, { transaction: t });
+      let menus = await ShopMenu.findAll({ where: { SHOPID: id }, transaction: t });
+
+      await Chat.updateChatbotShopInfo(shop._id, shop.SHOPNAME, menus);
+
+      return res.json({ success: 0 });
+    } catch (err) {
+      console.log(err);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
 };
 
 exports.addShopMenuSale = async (req, res, next) => {
@@ -346,9 +359,22 @@ exports.modifyShopMenu = async (req, res, next) => {
     if (newMenu) return res.status(409).json({ success: -1 });
   }
 
-  return ShopMenu.update({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep }, { where: { _id: menu } })
-    .then(() => res.json({ success: 0 }))
-    .catch(() => res.status(500).json({ success: 1 }));
+  return models.sequelize.transaction(async t => {
+    try {
+      const shop = await Shop.findOne({ where: { _id: id }, transaction: t });
+
+      await ShopMenu.update({ SHOPID: id, MENUNAME: name, PRICE: price, SOLD: sold, REP: rep }, { where: { _id: menu }, transaction: t });
+      let menus = await ShopMenu.findAll({ where: { SHOPID: id }, transaction: t });
+
+      await Chat.updateChatbotShopInfo(shop._id, shop.SHOPNAME, menus);
+
+      return res.json({ success: 0 });
+    } catch (err) {
+      console.log(err);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
 };
 
 exports.deleteShopMenu = async (req, res, next) => {
@@ -358,9 +384,22 @@ exports.deleteShopMenu = async (req, res, next) => {
   const exist = await ShopMenu.findOne({ where: { SHOPID: id, _id: menu } });
   if (!exist) return res.status(404).json({ success: -1 });
 
-  return ShopMenu.destroy({ where: { _id: menu } })
-    .then(() => res.json({ success: 0 }))
-    .catch(() => res.status(500).json({ success: 1 }));
+  return models.sequelize.transaction(async t => {
+    try {
+      const shop = await Shop.findOne({ where: { _id: id }, transaction: t });
+
+      await ShopMenu.destroy({ where: { _id: menu }, transaction: t });
+      let menus = await ShopMenu.findAll({ where: { SHOPID: id }, transaction: t });
+
+      await Chat.updateChatbotShopInfo(shop._id, shop.SHOPNAME, menus);
+
+      return res.json({ success: 0 });
+    } catch (err) {
+      console.log(err);
+      t.rollback();
+      return res.status(500).json({ success: 1 });
+    }
+  });
 };
 
 const insertShop = shop => {
@@ -371,7 +410,13 @@ const insertShop = shop => {
       const s = await Shop.create({ OWNERID: null, SHOPNAME: shop.name, PHONE: shop.tel, ADDRESS: ADDRESS, ADDRESSDETAIL: ADDRESS_DETAIL }, { transaction: t });
       await ShopCrawler.create({ SHOPID: s._id, SEARCHURL: shop.url }, { transaction: t });
 
-      for (var i in shop.menus) await ShopMenu.create({ SHOPID: s._id, MENUNAME: shop.menus[i].name, PRICE: shop.menus[i].price }, { transaction: t });
+      let menus = [];
+      for (var i in shop.menus) {
+        await ShopMenu.create({ SHOPID: s._id, MENUNAME: shop.menus[i].name, PRICE: shop.menus[i].price }, { transaction: t });
+        menus.push(shop.menus[i].name);
+      }
+
+      await Chat.insertChatbotShopInfo(s._id, shop.name, menus);
 
       return true;
     } catch (exception) {
@@ -409,6 +454,8 @@ exports.registerBusinessShop = async (req, res, next) => {
         { OWNERID: null, SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, ADDRESS: address, ADDRESSDETAIL: detail, ADDRLAT: lat, ADDRLNG: lng, ADMIN: true },
         { transaction: t }
       );
+
+      await Chat.updateChatbotShopInfo(s._id, name, []);
 
       return res.json({ success: 0, id: s._id });
     } catch (exception) {
@@ -650,6 +697,9 @@ exports.updateShopInfo = async (req, res, next) => {
         { SHOPNAME: name, PHONE: phone, HOMEPAGE: homepage, OPEN: open, DELIVERY: delivery, ADDRESSDETAIL: detail },
         { where: { _id: shop }, transaction: t }
       );
+
+      const menus = await ShopMenu.findAll({ where: { SHOPID: shop }, transaction: t });
+      await Chat.updateChatbotShopInfo(shop, name, menus);
 
       return res.json({ success: 0 });
     } catch (exception) {
