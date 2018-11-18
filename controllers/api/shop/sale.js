@@ -40,19 +40,6 @@ exports.searchSaleShops = async (req, res, next) => {
       .format("HHmm")
   );
 
-  // const sales = await Sale.findAll({
-  //   include: [{ model: ShopMenu }, { model: Shop }],
-  //   where: {
-  //     [Op.and]: [
-  //       { [Op.or]: [{ USEDATE: false }, { [Op.and]: [{ STARTDAY: { [Op.lte]: nowDate } }, { ENDDAY: { [Op.gte]: endDate } }] }] },
-  //       { [Op.or]: [{ USETIME: false }, { [Op.and]: [{ STARTTIME: { [Op.lte]: nowTime } }, { ENDTIME: { [Op.gte]: endTime } }] }] },
-  //       { [Op.or]: [{ LIMIT: -1 }, { COUNT: { [Op.gt]: 0 } }] }
-  //     ]
-  //   },
-  //   offset: (page - 1) * SearchCount,
-  //   limit: SearchCount
-  // });
-
   const shops = await Shop.findAll({
     attributes: [
       "_id",
@@ -78,7 +65,7 @@ exports.searchSaleShops = async (req, res, next) => {
             }
           }
         ]
-      },
+      }
     ],
     offset: (page - 1) * SearchCount,
     limit: SearchCount,

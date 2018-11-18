@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Business = require("@api/business");
+const Chat = require("@api/chat");
 const Shop = require("@api/shop");
 const Auth = require("@controllers/auth");
 const Files = require("@controllers/files");
@@ -24,5 +25,10 @@ router.put("/service/:request(\\d+)/allow", Auth.Admin.requireAdmin, Shop.Servic
 router.put("/service/:request(\\d+)/refuse", Auth.Admin.requireAdmin, Shop.Service.refuseRequest);
 
 router.delete("/shop/:id", Auth.Admin.requireAdmin, Business.deleteShopByAdmin);
+
+/**
+ * Chatbot
+ */
+router.post("/chatbot/:page(\\d+)", Auth.Admin.requireAdmin, Chat.updateChatbotData);
 
 module.exports = router;

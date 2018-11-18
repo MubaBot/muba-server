@@ -45,6 +45,7 @@ exports.getRequestList = async (req, res, next) => {
     return res.status(500).json({ success: -1 });
   }
 };
+
 exports.allowRequest = async (req, res, next) => {
   const request = req.params.request;
 
