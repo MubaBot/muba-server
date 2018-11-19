@@ -77,6 +77,26 @@ exports.getShopInfo = async (req, res, next) => {
   return res.status(404).json({ success: -1 });
 };
 
+exports.getShopInfoByName = async (req, res, next) => {
+  const shopname = req.params.shop;
+  const page = req.params.page;
+  const lat = req.params.lat;
+  const lng = req.params.lng;
+
+  const shop = await Shop.findOne({
+    attributes: ["_id", "SHOPNAME", [Literal(`(pow((\`ADDRLAT\` - ${lat}), 2) + pow((\`ADDRLNG\` - ${lng}), 2))`), "distance"]],
+    offset: (page - 1) * SearchCount,
+    limit: SearchCount,
+    where: { SHOPNAME: shopname },
+    order: [Literal(`\`ENDDATE\` >= '${moment().format("YYYY-MM-DD")}' DESC`), ["OPEN", "DESC"], Literal("distance ASC")]
+  }).catch(err => {
+    console.log(err);
+    return [];
+  });
+
+  return res.json({ success: 0, shop: shop });
+};
+
 exports.getShopSaleInfo = async (req, res, next) => {
   const sid = req.params.id;
   const mid = req.params.menu;

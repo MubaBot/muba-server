@@ -14,6 +14,7 @@ router.get("/:id(\\d+)/menus/sales", Shop.getShopMenusWithSale);
 router.get("/:id(\\d+)", Shop.getShopInfo);
 router.get("/list/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:keyword(*)", Auth.isLogin, Shop.searchShops);
 router.get("/list/sale/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
+router.get("/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:shop(*)", Auth.isLogin, Shop.getShopInfoByName);
 
 router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 
