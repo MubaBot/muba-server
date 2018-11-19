@@ -35,8 +35,6 @@ exports.searchFood = async (req, res, next) => {
   const lat = req.params.lat;
   const lng = req.params.lng;
 
-  console.log(keyword);
-
   const shops = await Shop.findAll({
     attributes: [
       "_id",
@@ -47,16 +45,30 @@ exports.searchFood = async (req, res, next) => {
       "POINT",
       [Literal(`(pow((\`ADDRLAT\` - ${lat}), 2) + pow((\`ADDRLNG\` - ${lng}), 2))`), "distance"]
     ],
-    include: [
-      {
-        model: ShopMenu,
-        where: { MENUNAME: { [Op.like]: `%${keyword}%` } }
-      },
-      { model: Review, attributes: ["_id"], required: false }
-    ],
+    include: [{ model: ShopMenu, where: { MENUNAME: { [Op.like]: `%${keyword}%` } } }, { model: Review, attributes: ["_id"], required: false }],
     offset: (page - 1) * SearchCount,
     limit: SearchCount,
     order: [Literal(`\`ENDDATE\` >= '${moment().format("YYYY-MM-DD")}' DESC`), ["OPEN", "DESC"], Literal("distance ASC")]
+  }).catch(err => {
+    console.log(err);
+    return [];
+  });
+
+  return res.json({ success: 0, lists: shops });
+};
+
+exports.searchRand = async (req, res, next) => {
+  const page = req.params.page;
+  const lat = req.params.lat;
+  const lng = req.params.lng;
+
+  const shops = await Shop.findAll({
+    attributes: ["_id", "SHOPNAME", "ENDDATE", "OPEN", "PHONE", "POINT"],
+    include: [{ model: ShopMenu, required: false }, { model: Review, attributes: ["_id"], required: false }],
+    where: Literal(`(pow((\`ADDRLAT\` - ${lat}), 2) + pow((\`ADDRLNG\` - ${lng}), 2)) <= 0.0015`),
+    offset: (page - 1) * SearchCount,
+    limit: SearchCount,
+    order: [Fn("RAND")]
   }).catch(err => {
     console.log(err);
     return [];

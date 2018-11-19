@@ -12,8 +12,8 @@ const Files = require("@controllers/files");
 router.get("/:id(\\d+)/owner", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.getShopOwnerCount);
 router.get("/:id(\\d+)/menus/sales", Shop.getShopMenusWithSale);
 router.get("/:id(\\d+)", Shop.getShopInfo);
-router.get("/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.searchShops);
-router.get("/list/sale/:page(\\d+)/:lat/:lng/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
+router.get("/list/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:keyword(*)", Auth.isLogin, Shop.searchShops);
+router.get("/list/sale/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:time(\\d+)", Auth.isLogin, Shop.Sale.searchSaleShops);
 
 router.post("/", Auth.Admin.requireAdmin, Shop.createShops);
 
@@ -23,7 +23,8 @@ router.put("/:id/latlng", Auth.getLoginInfo, Shop.setLatlng);
 /**
  * Search
  */
-router.get("/food/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.Search.searchFood);
+router.get("/food/list/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)/:keyword(*)", Auth.isLogin, Shop.Search.searchFood);
+router.get("/random/list/:page(\\d+)/:lat(\\d+.\\d+)/:lng(\\d+.\\d+)", Auth.isLogin, Shop.Search.searchRand);
 
 /**
  * Menu
