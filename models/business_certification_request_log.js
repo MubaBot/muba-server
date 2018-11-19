@@ -5,7 +5,7 @@ module.exports = function(sequelize, DataTypes) {
       _id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
       SHOPID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
       OWNERID: { type: DataTypes.INTEGER.UNSIGNED, notNull: true },
-      NUMBER: { type: DataTypes.STRING, unique: true, notNull: true },
+      NUMBER: { type: DataTypes.STRING, notNull: true },
       USERNAME: { type: DataTypes.STRING, notNull: true },
       URL: { type: DataTypes.STRING, unique: true, notNull: true }
     },

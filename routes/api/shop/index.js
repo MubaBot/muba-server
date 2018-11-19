@@ -21,6 +21,11 @@ router.put("/:id", Auth.Owner.requireOwner, Auth.Owner.shopAuthCheck, Shop.updat
 router.put("/:id/latlng", Auth.getLoginInfo, Shop.setLatlng);
 
 /**
+ * Search
+ */
+router.get("/food/list/:page(\\d+)/:lat/:lng/:keyword(*)", Auth.isLogin, Shop.Search.searchFood);
+
+/**
  * Menu
  */
 router.get("/:id/menu/:menu/sale", Shop.getShopSaleInfo);

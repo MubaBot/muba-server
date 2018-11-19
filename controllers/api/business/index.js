@@ -179,7 +179,7 @@ exports.registerBusiness = async (req, res, next) => {
   if (!s || s.SHOPNAME !== shop) return res.status(412).json({ success: -1 });
 
   const p = await Files.saveFileFromTempAsRandomName(file, ext, "Business");
-  if (p === false) return res.status(500).json({ success: -1 });
+  if (p === false) return res.status(500).json({ success: -2 });
 
   return models.sequelize.transaction(async t => {
     try {

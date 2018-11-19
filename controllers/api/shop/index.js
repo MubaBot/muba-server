@@ -37,6 +37,7 @@ const LatLngUpdateCount = 100;
 exports.Sale = { ...require("./sale") };
 exports.Service = { ...require("./service") };
 exports.Review = { ...require("./review") };
+exports.Search = { ...require("./search") };
 
 exports.getShopInfo = async (req, res, next) => {
   const nowDate = parseInt(moment().format("YYYYMMDD"));
