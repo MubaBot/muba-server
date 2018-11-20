@@ -85,8 +85,8 @@ exports.getShopInfoByName = async (req, res, next) => {
 
   const shop = await Shop.findOne({
     attributes: ["_id", "SHOPNAME", [Literal(`(pow((\`ADDRLAT\` - ${lat}), 2) + pow((\`ADDRLNG\` - ${lng}), 2))`), "distance"]],
-    offset: (page - 1) * SearchCount,
-    limit: SearchCount,
+    offset: 0,
+    limit: 1,
     where: { SHOPNAME: shopname },
     order: [Literal(`\`ENDDATE\` >= '${moment().format("YYYY-MM-DD")}' DESC`), ["OPEN", "DESC"], Literal("distance ASC")]
   }).catch(err => {
